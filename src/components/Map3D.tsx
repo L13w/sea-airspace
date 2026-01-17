@@ -4,24 +4,30 @@ import { MapboxOverlay } from '@deck.gl/mapbox';
 import { GeoJsonLayer } from '@deck.gl/layers';
 import type { MapboxOverlayProps } from '@deck.gl/mapbox';
 import type { PickingInfo } from '@deck.gl/core';
-import { useAirspaceData, SEATTLE_BOUNDS } from '../hooks/useAirspaceData';
+import { useAirspaceData } from '../hooks/useAirspaceData';
+import type { TerminalArea } from '../config/terminalAreas';
 import { InfoPanel } from './InfoPanel';
 import { Legend } from './Legend';
 import { AirspaceProfile } from './AirspaceProfile';
 import { AltitudeScale } from './AltitudeScale';
 import { BrowserNotice } from './BrowserNotice';
+import { TerminalAreaSelector } from './TerminalAreaSelector';
+import { ContactModal } from './ContactModal';
 import { formatAltitude } from '../utils/altitudeUtils';
 import { getOutlineColor, HIGHLIGHT_COLORS } from '../utils/colorUtils';
 import type { ProcessedAirspace } from '../types/airspace';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-const INITIAL_VIEW = {
-  longitude: -122.45,
-  latitude: 47.35,
-  zoom: 8.5,
-  pitch: 55,
-  bearing: -20,
-};
+// Get initial view for a terminal area
+function getInitialView(area: TerminalArea) {
+  return {
+    longitude: area.centerLng,
+    latitude: area.centerLat,
+    zoom: 8.5,
+    pitch: 55,
+    bearing: -20,
+  };
+}
 
 // Vertical exaggeration factor - makes altitude differences visible
 const ALTITUDE_EXAGGERATION = 16.7;
@@ -39,13 +45,26 @@ interface HoverInfo {
   object: ProcessedAirspace;
 }
 
-export function Map3D() {
-  const { data, loading, error } = useAirspaceData(SEATTLE_BOUNDS);
+interface Map3DProps {
+  terminalArea: TerminalArea;
+}
+
+export function Map3D({ terminalArea }: Map3DProps) {
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const { data, loading, error } = useAirspaceData(terminalArea);
   const [selectedAirspace, setSelectedAirspace] = useState<ProcessedAirspace | null>(null);
   const [hoveredAirspace, setHoveredAirspace] = useState<ProcessedAirspace | null>(null);
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
   const [showClassE, setShowClassE] = useState(false);
   const [showHelpOverlay, setShowHelpOverlay] = useState(true);
+  const [viewState, setViewState] = useState(getInitialView(terminalArea));
+
+  // Reset view when terminal area changes
+  React.useEffect(() => {
+    setViewState(getInitialView(terminalArea));
+    setSelectedAirspace(null);
+    setHoveredAirspace(null);
+  }, [terminalArea]);
 
   const handleClick = useCallback((info: PickingInfo) => {
     if (info.object) {
@@ -204,6 +223,30 @@ export function Map3D() {
     return [fillLayer, outlineLayer];
   }, [sortedData, selectedAirspace, hoveredAirspace, handleClick, handleHover]);
 
+  // Create map style with the appropriate sectional chart for this terminal area
+  const mapStyle = useMemo(() => ({
+    version: 8 as const,
+    sources: {
+      'sectional': {
+        type: 'raster' as const,
+        tiles: [
+          'https://tiles.arcgis.com/tiles/ssFJjBXIUyZDrSYZ/arcgis/rest/services/VFR_Sectional/MapServer/tile/{z}/{y}/{x}'
+        ],
+        tileSize: 256,
+        attribution: 'FAA Aeronautical Charts'
+      }
+    },
+    layers: [
+      {
+        id: 'sectional-layer',
+        type: 'raster' as const,
+        source: 'sectional',
+        minzoom: 0,
+        maxzoom: 12
+      }
+    ]
+  }), []);
+
   const showProfile = true;
   const show3D = true;
 
@@ -212,35 +255,26 @@ export function Map3D() {
       {/* Map container */}
       {show3D && (
         <Map
-          initialViewState={INITIAL_VIEW}
+          {...viewState}
+          onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
           maxPitch={85}
           minPitch={0}
-          mapStyle={{
-            version: 8,
-            sources: {
-              'sectional': {
-                type: 'raster',
-                tiles: [
-                  'https://tiles.arcgis.com/tiles/ssFJjBXIUyZDrSYZ/arcgis/rest/services/VFR_Sectional/MapServer/tile/{z}/{y}/{x}'
-                ],
-                tileSize: 256,
-                attribution: 'FAA Aeronautical Charts'
-              }
-            },
-            layers: [
-              {
-                id: 'sectional-layer',
-                type: 'raster',
-                source: 'sectional',
-                minzoom: 0,
-                maxzoom: 12
-              }
-            ]
-          }}
+          mapStyle={mapStyle}
         >
           <DeckGLOverlay layers={layers} interleaved />
         </Map>
       )}
+
+      {/* Terminal Area Selector - upper left */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 16,
+          left: 16,
+        }}
+      >
+        <TerminalAreaSelector selectedArea={terminalArea} />
+      </div>
 
       {/* Title */}
       <div
@@ -260,7 +294,7 @@ export function Map3D() {
             letterSpacing: '-0.02em',
           }}
         >
-          Seattle Airspace
+          {terminalArea.name} Airspace
         </h1>
         <p
           className="mono"
@@ -270,7 +304,7 @@ export function Map3D() {
             marginTop: '2px',
           }}
         >
-          SEA Class B • 3D Visualization
+          {terminalArea.id} • 3D Visualization
         </p>
       </div>
 
@@ -329,7 +363,7 @@ export function Map3D() {
       <div
         style={{
           position: 'absolute',
-          right: 352,
+          right: 16,
           top: 16,
           display: 'flex',
           gap: '8px',
@@ -618,6 +652,61 @@ export function Map3D() {
 
       {/* Browser compatibility notice */}
       <BrowserNotice />
+
+      {/* Contact link at bottom */}
+      <button
+        onClick={() => setContactModalOpen(true)}
+        style={{
+          position: 'absolute',
+          bottom: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '8px 16px',
+          borderRadius: '6px',
+          transition: 'all 0.15s ease',
+        }}
+        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+        }}
+        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+          e.currentTarget.style.background = 'transparent';
+        }}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--text-muted)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+        <span
+          style={{
+            fontSize: '12px',
+            color: 'var(--text-muted)',
+            fontWeight: 500,
+          }}
+        >
+          Contact
+        </span>
+      </button>
+
+      {/* Contact Modal */}
+      <ContactModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+      />
     </div>
   );
 }

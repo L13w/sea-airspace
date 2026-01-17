@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { AirspaceGeoJSON, ProcessedAirspace, SeattleBounds } from '../types/airspace';
+import type { AirspaceGeoJSON, ProcessedAirspace } from '../types/airspace';
 import { processAirspaceFeatures } from '../utils/geometryUtils';
+import type { TerminalArea } from '../config/terminalAreas';
 
 const API_URL = 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Class_Airspace/FeatureServer/0/query';
 
@@ -10,7 +11,7 @@ interface UseAirspaceDataReturn {
   error: Error | null;
 }
 
-export function useAirspaceData(bounds: SeattleBounds): UseAirspaceDataReturn {
+export function useAirspaceData(terminalArea: TerminalArea): UseAirspaceDataReturn {
   const [data, setData] = useState<ProcessedAirspace[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -20,6 +21,7 @@ export function useAirspaceData(bounds: SeattleBounds): UseAirspaceDataReturn {
       setLoading(true);
       setError(null);
 
+      const { bounds } = terminalArea;
       const params = new URLSearchParams({
         outFields: '*',
         where: '1=1',
@@ -54,15 +56,7 @@ export function useAirspaceData(bounds: SeattleBounds): UseAirspaceDataReturn {
     };
 
     fetchData();
-  }, [bounds.minLat, bounds.maxLat, bounds.minLng, bounds.maxLng]);
+  }, [terminalArea.id, terminalArea.bounds.minLat, terminalArea.bounds.maxLat, terminalArea.bounds.minLng, terminalArea.bounds.maxLng]);
 
   return { data, loading, error };
 }
-
-// Seattle area bounds
-export const SEATTLE_BOUNDS: SeattleBounds = {
-  minLat: 47.0,
-  maxLat: 48.2,
-  minLng: -123.0,
-  maxLng: -121.5,
-};

@@ -1,5 +1,5 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Build stage for frontend
+FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app
 
@@ -15,16 +15,25 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Production stage - use nginx to serve static files
-FROM nginx:alpine
+# Production stage - Node.js server
+FROM node:20-alpine
 
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Copy custom nginx config for SPA routing
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy server files
+COPY server/package*.json ./
+RUN npm install --production
+
+COPY server/ ./
+
+# Copy built frontend from builder stage
+COPY --from=frontend-builder /app/dist ./dist
 
 # Expose port 80
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Set default port and production mode
+ENV PORT=80
+ENV NODE_ENV=production
+
+CMD ["node", "index.js"]
