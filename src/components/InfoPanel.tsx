@@ -26,14 +26,15 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
     // Different positioning for landscape vs portrait
     const panelStyle = isMobileLandscape
       ? {
-          // Landscape: lower left corner, rounded card
-          position: 'absolute' as const,
+          // Landscape: lower right corner, rounded card
+          position: 'fixed' as const,
           bottom: 16,
-          left: 16,
+          right: 16,
           maxWidth: '400px',
           overflow: 'hidden',
           borderRadius: '12px',
-          animation: 'slideInLeft 0.25s ease-out',
+          animation: 'slideInRight 0.25s ease-out',
+          zIndex: 5000,
         }
       : {
           // Portrait: full-width bottom bar
@@ -47,6 +48,7 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
           animation: 'slideUpMobile 0.25s ease-out',
           // Extra padding for mobile browser UI (address bar, home indicator)
           paddingBottom: 'max(calc(env(safe-area-inset-bottom, 50px) + 12px), 50px)',
+          zIndex: 5000,
         };
 
     return (
@@ -65,10 +67,10 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
               transform: translateY(0);
             }
           }
-          @keyframes slideInLeft {
+          @keyframes slideInRight {
             from {
               opacity: 0;
-              transform: translateX(-100%);
+              transform: translateX(100%);
             }
             to {
               opacity: 1;
