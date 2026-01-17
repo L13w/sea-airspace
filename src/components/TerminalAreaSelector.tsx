@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TERMINAL_AREAS, type TerminalArea } from '../config/terminalAreas';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface TerminalAreaSelectorProps {
   selectedArea: TerminalArea;
@@ -8,6 +9,7 @@ interface TerminalAreaSelectorProps {
 
 export function TerminalAreaSelector({ selectedArea }: TerminalAreaSelectorProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -25,12 +27,12 @@ export function TerminalAreaSelector({ selectedArea }: TerminalAreaSelectorProps
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Focus input when dropdown opens
+  // Focus input when dropdown opens (skip on mobile to prevent keyboard)
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (isOpen && inputRef.current && !isMobile) {
       inputRef.current.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   // Filter areas based on search
   const filteredAreas = TERMINAL_AREAS.filter(area =>
@@ -123,57 +125,59 @@ export function TerminalAreaSelector({ selectedArea }: TerminalAreaSelectorProps
             zIndex: 5000,
           }}
         >
-          {/* Search input */}
-          <div style={{ padding: '12px 12px 8px' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 10px',
-                background: 'var(--bg-tertiary)',
-                borderRadius: '6px',
-                border: '1px solid var(--border-subtle)',
-              }}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--text-muted)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Search terminal areas..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+          {/* Search input - hidden on mobile */}
+          {!isMobile && (
+            <div style={{ padding: '12px 12px 8px' }}>
+              <div
                 style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: 'var(--text-primary)',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-sans)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 10px',
+                  background: 'var(--bg-tertiary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
                 }}
-              />
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--text-muted)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  placeholder="Search terminal areas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: 'var(--text-primary)',
+                    fontSize: '12px',
+                    fontFamily: 'var(--font-sans)',
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Area list */}
           <div
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '0 8px 8px',
+              padding: isMobile ? '8px 8px 8px' : '0 8px 8px',
             }}
           >
             {filteredAreas.length === 0 ? (
