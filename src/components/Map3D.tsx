@@ -339,8 +339,8 @@ export function Map3D({ terminalArea }: Map3DProps) {
         </div>
       )}
 
-      {/* Hover tooltip */}
-      {hoverInfo && show3D && (
+      {/* Hover tooltip - hidden on mobile when airspace is selected */}
+      {hoverInfo && show3D && !(isMobile && selectedAirspace) && (
         <div
           className="glass-panel animate-fade-in"
           style={{

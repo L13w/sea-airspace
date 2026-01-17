@@ -1,6 +1,7 @@
 import type { ProcessedAirspace } from '../types/airspace';
 import { formatAltitude, metersToFeet } from '../utils/altitudeUtils';
 import { getAirspaceColorCSS, getAirspaceGlowCSS, CLASS_DESCRIPTIONS } from '../utils/colorUtils';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface InfoPanelProps {
   airspace: ProcessedAirspace | null;
@@ -8,6 +9,8 @@ interface InfoPanelProps {
 }
 
 export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
+  const isMobile = useIsMobile();
+
   if (!airspace) return null;
 
   const { properties, floorMeters, ceilingMeters } = airspace;
@@ -16,6 +19,203 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
   const glow = getAirspaceGlowCSS(properties.CLASS);
   const description = CLASS_DESCRIPTIONS[properties.CLASS];
 
+  // Mobile: compact bottom bar
+  if (isMobile) {
+    return (
+      <div
+        className="glass-panel"
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          overflow: 'hidden',
+          borderRadius: '16px 16px 0 0',
+          borderBottom: 'none',
+          animation: 'slideUpMobile 0.25s ease-out',
+        }}
+      >
+        <style>{`
+          @keyframes slideUpMobile {
+            from {
+              opacity: 0;
+              transform: translateY(100%);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}</style>
+
+        {/* Swipe indicator */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            paddingTop: '8px',
+          }}
+        >
+          <div
+            style={{
+              width: '32px',
+              height: '4px',
+              background: 'var(--text-muted)',
+              borderRadius: '2px',
+              opacity: 0.4,
+            }}
+          />
+        </div>
+
+        {/* Content row */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '12px 16px 16px',
+            gap: '12px',
+          }}
+        >
+          {/* Color accent bar */}
+          <div
+            style={{
+              width: '4px',
+              height: '48px',
+              background: `linear-gradient(to bottom, ${color}, ${color}66)`,
+              borderRadius: '2px',
+              boxShadow: `0 0 12px ${glow}`,
+              flexShrink: 0,
+            }}
+          />
+
+          {/* Class badge */}
+          <div
+            className={`class-badge ${properties.CLASS}`}
+            style={{
+              flexShrink: 0,
+              width: '32px',
+              height: '32px',
+              fontSize: '14px',
+            }}
+          >
+            {properties.CLASS}
+          </div>
+
+          {/* Name and type */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {properties.NAME}
+            </div>
+            <div
+              style={{
+                fontSize: '11px',
+                color: 'var(--text-muted)',
+                marginTop: '2px',
+              }}
+            >
+              {description?.short || `Class ${properties.CLASS}`}
+            </div>
+          </div>
+
+          {/* Altitude range - compact */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              flexShrink: 0,
+            }}
+          >
+            <div
+              className="mono"
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                lineHeight: 1.2,
+              }}
+            >
+              {formatAltitude(properties.LOWER_VAL, properties.LOWER_CODE)}
+            </div>
+            <div
+              style={{
+                fontSize: '9px',
+                color: 'var(--text-muted)',
+                margin: '1px 0',
+              }}
+            >
+              ▲
+            </div>
+            <div
+              className="mono"
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                lineHeight: 1.2,
+              }}
+            >
+              {formatAltitude(properties.UPPER_VAL, properties.UPPER_CODE)}
+            </div>
+          </div>
+
+          {/* Vertical extent pill */}
+          <div
+            style={{
+              padding: '6px 10px',
+              background: `${color}20`,
+              borderRadius: '6px',
+              border: `1px solid ${color}30`,
+              flexShrink: 0,
+            }}
+          >
+            <div
+              className="mono"
+              style={{
+                fontSize: '14px',
+                fontWeight: 700,
+                color: color,
+              }}
+            >
+              {verticalExtentFeet.toLocaleString()}'
+            </div>
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-secondary)',
+              fontSize: '18px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop: full panel (unchanged)
   return (
     <div
       className="glass-panel animate-slide-in"
