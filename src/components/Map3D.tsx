@@ -271,12 +271,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
           position: 'absolute',
           top: 16,
           left: 16,
+          zIndex: 100,
         }}
       >
         <TerminalAreaSelector selectedArea={terminalArea} />
       </div>
 
-      {/* Title */}
+      {/* Title - compact dark box, centered */}
       <div
         style={{
           position: 'absolute',
@@ -284,14 +285,21 @@ export function Map3D({ terminalArea }: Map3DProps) {
           left: '50%',
           transform: 'translateX(-50%)',
           textAlign: 'center',
+          background: 'rgba(15, 23, 42, 0.9)',
+          backdropFilter: 'blur(8px)',
+          padding: '8px 16px',
+          borderRadius: '6px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          zIndex: 100,
         }}
       >
         <h1
           style={{
-            fontSize: '16px',
+            fontSize: '15px',
             fontWeight: 600,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.02em',
+            color: '#f8fafc',
+            letterSpacing: '-0.01em',
+            margin: 0,
           }}
         >
           {terminalArea.name} Airspace
@@ -299,9 +307,11 @@ export function Map3D({ terminalArea }: Map3DProps) {
         <p
           className="mono"
           style={{
-            fontSize: '11px',
-            color: 'var(--text-muted)',
+            fontSize: '10px',
+            color: 'rgba(148, 163, 184, 0.9)',
             marginTop: '2px',
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
           }}
         >
           {terminalArea.id} • 3D Visualization
@@ -359,82 +369,101 @@ export function Map3D({ terminalArea }: Map3DProps) {
         </div>
       )}
 
-      {/* Action buttons */}
-      <div
-        style={{
-          position: 'absolute',
-          right: 16,
-          top: 16,
-          display: 'flex',
-          gap: '8px',
-        }}
-      >
-        <button
-          onClick={() => setShowHelpOverlay(true)}
-          className="glass-panel"
-          style={{
-            padding: '8px 14px',
-            fontSize: '12px',
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-            background: 'var(--bg-glass)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.color = 'var(--text-primary)';
-            e.currentTarget.style.borderColor = 'var(--border-default)';
-          }}
-          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.color = 'var(--text-secondary)';
-            e.currentTarget.style.borderColor = 'var(--border-subtle)';
-          }}
-        >
-          Help
-        </button>
-        <a
-          href="https://github.com/L13w/sea-airspace"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="glass-panel"
-          style={{
-            padding: '8px 14px',
-            fontSize: '12px',
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-            background: 'var(--bg-glass)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            textDecoration: 'none',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.currentTarget.style.color = 'var(--text-primary)';
-            e.currentTarget.style.borderColor = 'var(--border-default)';
-          }}
-          onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.currentTarget.style.color = 'var(--text-secondary)';
-            e.currentTarget.style.borderColor = 'var(--border-subtle)';
-          }}
-        >
-          Code &amp; Docs
-        </a>
-      </div>
-
-      {/* Profile view */}
+      {/* Right-side panel: Action buttons + Profile view - horizontally aligned */}
       {showProfile && data && (
-        <AirspaceProfile
-          key={`profile-${terminalArea.id}`}
-          airspaces={data}
-          selectedAirspace={selectedAirspace}
-          hoveredAirspace={hoveredAirspace}
-          onAirspaceClick={handleProfileClick}
-          onAirspaceHover={handleProfileHover}
-          airportCode={terminalArea.id}
-        />
+        <div
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: 16,
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: '12px',
+            zIndex: 100,
+          }}
+        >
+          {/* Action buttons - horizontal row */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              gap: '8px',
+              paddingTop: '2px',
+            }}
+          >
+            <button
+              onClick={() => setShowHelpOverlay(true)}
+              className="glass-panel"
+              style={{
+                padding: '8px 14px',
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.currentTarget.style.background = 'var(--bg-glass)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              Help
+            </button>
+            <a
+              href="https://github.com/L13w/sea-airspace"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-panel"
+              style={{
+                padding: '8px 14px',
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                transition: 'all 0.15s ease',
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                e.currentTarget.style.background = 'var(--bg-glass)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              Code & Docs
+            </a>
+          </div>
+
+          {/* Profile view - inline */}
+          <AirspaceProfile
+            key={`profile-${terminalArea.id}`}
+            airspaces={data}
+            selectedAirspace={selectedAirspace}
+            hoveredAirspace={hoveredAirspace}
+            onAirspaceClick={handleProfileClick}
+            onAirspaceHover={handleProfileHover}
+            airportCode={terminalArea.id}
+          />
+        </div>
       )}
 
       {/* Altitude scale */}

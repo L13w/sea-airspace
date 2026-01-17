@@ -89,9 +89,6 @@ export function AirspaceProfile({
     <div
       className="glass-panel animate-fade-in"
       style={{
-        position: 'absolute',
-        right: 16,
-        top: 16,
         width: profileWidth,
         padding: '16px',
       }}
