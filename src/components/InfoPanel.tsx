@@ -34,7 +34,7 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
           borderBottom: 'none',
           animation: 'slideUpMobile 0.25s ease-out',
           // Extra padding for mobile browser UI (address bar, home indicator)
-          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
         }}
       >
         <style>{`
@@ -49,25 +49,6 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
             }
           }
         `}</style>
-
-        {/* Swipe indicator */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            paddingTop: '8px',
-          }}
-        >
-          <div
-            style={{
-              width: '32px',
-              height: '4px',
-              background: 'var(--text-muted)',
-              borderRadius: '2px',
-              opacity: 0.4,
-            }}
-          />
-        </div>
 
         {/* Content row */}
         <div
