@@ -427,17 +427,20 @@ export function Map3D({ terminalArea }: Map3DProps) {
       {/* Profile view */}
       {showProfile && data && (
         <AirspaceProfile
+          key={`profile-${terminalArea.id}`}
           airspaces={data}
           selectedAirspace={selectedAirspace}
           hoveredAirspace={hoveredAirspace}
           onAirspaceClick={handleProfileClick}
           onAirspaceHover={handleProfileHover}
+          airportCode={terminalArea.id}
         />
       )}
 
       {/* Altitude scale */}
       {show3D && data && (
         <AltitudeScale
+          key={`scale-${terminalArea.id}`}
           airspaces={data}
           selectedAirspace={selectedAirspace}
           hoveredAirspace={hoveredAirspace}

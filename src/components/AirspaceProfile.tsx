@@ -9,6 +9,7 @@ interface AirspaceProfileProps {
   hoveredAirspace: ProcessedAirspace | null;
   onAirspaceClick: (airspace: ProcessedAirspace) => void;
   onAirspaceHover: (airspace: ProcessedAirspace | null) => void;
+  airportCode: string;
 }
 
 // Convert altitude tiers into renderable blocks
@@ -26,6 +27,7 @@ export function AirspaceProfile({
   hoveredAirspace,
   onAirspaceClick,
   onAirspaceHover,
+  airportCode,
 }: AirspaceProfileProps) {
   // Filter to Class B only and create profile blocks
   const classBBlocks = useMemo(() => {
@@ -243,7 +245,7 @@ export function AirspaceProfile({
             textAnchor="middle"
             fontFamily="var(--font-mono)"
           >
-            SEA
+            {airportCode}
           </text>
         </g>
 
