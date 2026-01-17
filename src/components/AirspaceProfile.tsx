@@ -118,7 +118,7 @@ export function AirspaceProfile({
         </span>
       </h3>
 
-      <svg width={profileWidth - 32} height={profileHeight} style={{ overflow: 'visible' }}>
+      <svg width={profileWidth - 32} height={profileHeight}>
         {/* Grid lines */}
         {altitudeMarkers.map(alt => (
           <g key={alt}>
@@ -166,8 +166,15 @@ export function AirspaceProfile({
 
         {/* Class B blocks - rendered as symmetric wedding cake */}
         {classBBlocks.map((block) => {
-          const y = altitudeToY(block.ceilingFeet);
-          const height = altitudeToY(block.floorFeet) - altitudeToY(block.ceilingFeet);
+          // Clamp altitudes to chart bounds (0 to maxAltitude)
+          const clampedCeiling = Math.min(block.ceilingFeet, maxAltitude);
+          const clampedFloor = Math.max(block.floorFeet, 0);
+
+          // Skip blocks entirely outside the chart range
+          if (clampedFloor >= maxAltitude || clampedCeiling <= 0) return null;
+
+          const y = altitudeToY(clampedCeiling);
+          const height = altitudeToY(clampedFloor) - altitudeToY(clampedCeiling);
           const leftX = distanceToX(block.radiusNm, 'left');
           const rightX = distanceToX(block.radiusNm, 'right');
           const width = rightX - leftX;
