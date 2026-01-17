@@ -791,22 +791,23 @@ export function Map3D({ terminalArea }: Map3DProps) {
       <div
         style={{
           position: 'absolute',
-          bottom: isMobileAny ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
+          bottom: isMobileAny ? 'calc(env(safe-area-inset-bottom, 0px) + 8px)' : 16,
           left: '50%',
           transform: 'translateX(-50%)',
-          fontSize: '12px',
-          color: 'rgba(255, 255, 255, 0.7)',
-          zIndex: 100,
-          textShadow: '0 1px 3px rgba(0, 0, 0, 0.8)',
+          fontSize: '11px',
+          color: 'rgba(255, 255, 255, 0.8)',
+          zIndex: 1000,
+          textShadow: '0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.5)',
           fontWeight: 500,
           pointerEvents: 'auto',
+          whiteSpace: 'nowrap',
         }}
       >
         © 2026{' '}
         <a
           href="mailto:llew@llew.net"
           style={{
-            color: 'rgba(255, 255, 255, 0.7)',
+            color: 'rgba(255, 255, 255, 0.8)',
             textDecoration: 'none',
             transition: 'color 0.15s ease',
           }}
@@ -815,7 +816,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
             e.currentTarget.style.textDecoration = 'underline';
           }}
           onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
             e.currentTarget.style.textDecoration = 'none';
           }}
         >
