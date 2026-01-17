@@ -9,6 +9,7 @@ import { InfoPanel } from './InfoPanel';
 import { Legend } from './Legend';
 import { AirspaceProfile } from './AirspaceProfile';
 import { AltitudeScale } from './AltitudeScale';
+import { BrowserNotice } from './BrowserNotice';
 import { formatAltitude } from '../utils/altitudeUtils';
 import { getOutlineColor, HIGHLIGHT_COLORS } from '../utils/colorUtils';
 import type { ProcessedAirspace } from '../types/airspace';
@@ -614,6 +615,9 @@ export function Map3D() {
           </div>
         </div>
       )}
+
+      {/* Browser compatibility notice */}
+      <BrowserNotice />
     </div>
   );
 }
