@@ -787,17 +787,17 @@ export function Map3D({ terminalArea }: Map3DProps) {
       {/* Browser compatibility notice */}
       <BrowserNotice />
 
-      {/* Copyright notice at bottom - positioned above safe area on mobile */}
+      {/* Copyright notice at bottom - fixed position to escape map stacking context */}
       <div
         style={{
-          position: 'absolute',
+          position: 'fixed',
           bottom: isMobileAny ? 'calc(env(safe-area-inset-bottom, 0px) + 8px)' : 16,
           left: '50%',
           transform: 'translateX(-50%)',
           fontSize: '11px',
-          color: 'rgba(255, 255, 255, 0.8)',
-          zIndex: 1000,
-          textShadow: '0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.5)',
+          color: 'rgba(255, 255, 255, 0.9)',
+          zIndex: 9999,
+          textShadow: '0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6)',
           fontWeight: 500,
           pointerEvents: 'auto',
           whiteSpace: 'nowrap',
@@ -807,7 +807,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
         <a
           href="mailto:llew@llew.net"
           style={{
-            color: 'rgba(255, 255, 255, 0.8)',
+            color: 'rgba(255, 255, 255, 0.9)',
             textDecoration: 'none',
             transition: 'color 0.15s ease',
           }}
@@ -816,7 +816,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
             e.currentTarget.style.textDecoration = 'underline';
           }}
           onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)';
             e.currentTarget.style.textDecoration = 'none';
           }}
         >
