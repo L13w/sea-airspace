@@ -798,7 +798,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
           transform: 'translateX(-50%)',
           fontSize: '11px',
           color: 'rgba(255, 255, 255, 0.9)',
-          zIndex: 9999,
+          zIndex: 1000,
           textShadow: '0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6)',
           fontWeight: 500,
           pointerEvents: 'auto',
@@ -807,7 +807,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
       >
         © 2026{' '}
         <a
-          href="mailto:llew@llew.net"
+          href="mailto:Llew Roberts <llew@llew.net>"
           style={{
             color: 'rgba(255, 255, 255, 0.9)',
             textDecoration: 'none',
