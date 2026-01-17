@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { ProcessedAirspace } from '../types/airspace';
-import { getAirspaceColorCSS, getAirspaceGlowCSS, AIRSPACE_COLORS } from '../utils/colorUtils';
+import { getAirspaceColorCSS, getAirspaceGlowCSS } from '../utils/colorUtils';
 import { metersToFeet } from '../utils/altitudeUtils';
 
 interface AirspaceProfileProps {
@@ -58,13 +58,6 @@ export function AirspaceProfile({
     });
 
     return blocks;
-  }, [airspaces]);
-
-  // Get other airspace classes for the legend (used in mini legend below)
-  useMemo(() => {
-    const classes = new Set(airspaces.map(a => a.properties.CLASS));
-    classes.delete('B');
-    return Array.from(classes);
   }, [airspaces]);
 
   // Profile dimensions
@@ -299,42 +292,6 @@ export function AirspaceProfile({
           Altitude (feet MSL)
         </text>
       </svg>
-
-      {/* Mini legend */}
-      <div
-        style={{
-          marginTop: '12px',
-          paddingTop: '12px',
-          borderTop: '1px solid var(--border-subtle)',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '8px',
-        }}
-      >
-        {Object.entries(AIRSPACE_COLORS).map(([cls, colors]) => (
-          <div
-            key={cls}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              fontSize: '10px',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <div
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '2px',
-                background: colors.css,
-                boxShadow: `0 0 4px ${colors.cssGlow}`,
-              }}
-            />
-            <span className="mono">{cls}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

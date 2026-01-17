@@ -42,6 +42,9 @@ export function AltitudeScale({
   const highlightedFloor = highlighted ? Math.round(metersToFeet(highlighted.floorMeters)) : null;
   const highlightedCeiling = highlighted ? Math.round(metersToFeet(highlighted.ceilingMeters)) : null;
 
+  // Extra width for the highlight bracket
+  const bracketExtra = 6;
+
   return (
     <div
       className="glass-panel"
@@ -54,6 +57,7 @@ export function AltitudeScale({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        minWidth: scaleWidth + bracketExtra + 16, // Fixed width to prevent layout shift
       }}
     >
       <div
@@ -72,7 +76,7 @@ export function AltitudeScale({
         Altitude MSL
       </div>
 
-      <svg width={scaleWidth} height={scaleHeight} style={{ overflow: 'visible' }}>
+      <svg width={scaleWidth + bracketExtra} height={scaleHeight} style={{ overflow: 'visible' }}>
         {/* Background gradient showing altitude zones */}
         <defs>
           <linearGradient id="altitudeGradient" x1="0" y1="1" x2="0" y2="0">
@@ -178,47 +182,46 @@ export function AltitudeScale({
         )}
       </svg>
 
-      {/* Current selection indicator */}
-      {highlighted && (
+      {/* Current selection indicator - always rendered to prevent layout shift */}
+      <div
+        style={{
+          marginTop: '8px',
+          padding: '6px 8px',
+          background: highlighted ? 'var(--bg-tertiary)' : 'transparent',
+          borderRadius: '4px',
+          border: highlighted ? '1px solid rgba(251, 191, 36, 0.3)' : '1px solid transparent',
+          textAlign: 'center',
+          minWidth: '44px',
+          visibility: highlighted ? 'visible' : 'hidden',
+        }}
+      >
         <div
-          className="animate-fade-in"
           style={{
-            marginTop: '8px',
-            padding: '6px 8px',
-            background: 'var(--bg-tertiary)',
-            borderRadius: '4px',
-            border: '1px solid rgba(251, 191, 36, 0.3)',
-            textAlign: 'center',
+            fontSize: '9px',
+            color: 'var(--text-muted)',
+            marginBottom: '2px',
           }}
         >
-          <div
-            style={{
-              fontSize: '9px',
-              color: 'var(--text-muted)',
-              marginBottom: '2px',
-            }}
-          >
-            {highlightedFloor === 0 ? 'SFC' : `${highlightedFloor?.toLocaleString()}'`}
-          </div>
-          <div
-            style={{
-              width: '2px',
-              height: '8px',
-              background: '#fbbf24',
-              margin: '0 auto',
-            }}
-          />
-          <div
-            style={{
-              fontSize: '9px',
-              color: 'var(--text-muted)',
-              marginTop: '2px',
-            }}
-          >
-            {highlightedCeiling?.toLocaleString()}'
-          </div>
+          {highlightedFloor === 0 ? 'SFC' : `${highlightedFloor?.toLocaleString()}'`}
         </div>
-      )}
+        <div
+          style={{
+            width: '2px',
+            height: '8px',
+            background: '#fbbf24',
+            margin: '0 auto',
+          }}
+        />
+        <div
+          style={{
+            fontSize: '9px',
+            color: 'var(--text-muted)',
+            marginTop: '2px',
+          }}
+        >
+          {highlightedCeiling?.toLocaleString()}'
+        </div>
+      </div>
     </div>
   );
 }

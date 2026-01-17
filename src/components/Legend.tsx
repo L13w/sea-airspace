@@ -18,7 +18,7 @@ export function Legend({ compact = false, showClassE = false, onShowClassEChange
         style={{
           position: 'absolute',
           bottom: 24,
-          left: 90,
+          left: 120,
           padding: '10px 14px',
           display: 'flex',
           gap: '12px',
@@ -67,7 +67,7 @@ export function Legend({ compact = false, showClassE = false, onShowClassEChange
       style={{
         position: 'absolute',
         bottom: 24,
-        left: 90,
+        left: 120,
         padding: '14px 16px',
         minWidth: '200px',
       }}
