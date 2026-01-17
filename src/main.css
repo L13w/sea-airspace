@@ -195,3 +195,58 @@ body,
   color: white;
   box-shadow: 0 2px 8px var(--class-b-glow);
 }
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Hide on mobile utility class */
+.hide-on-mobile {
+  display: block;
+}
+
+/* Show on mobile utility class */
+.show-on-mobile {
+  display: none;
+}
+
+/* Mobile-specific layout adjustments */
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .show-on-mobile {
+    display: block !important;
+  }
+
+  /* Smaller glass panels on mobile */
+  .glass-panel {
+    border-radius: 8px;
+  }
+
+  /* Mobile-optimized class badge */
+  .class-badge {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+}
+
+/* Small mobile screens */
+@media (max-width: 480px) {
+  .glass-panel {
+    border-radius: 6px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .glass-panel button,
+  .glass-panel a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

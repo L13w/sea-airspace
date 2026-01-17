@@ -5,6 +5,7 @@ import { GeoJsonLayer } from '@deck.gl/layers';
 import type { MapboxOverlayProps } from '@deck.gl/mapbox';
 import type { PickingInfo } from '@deck.gl/core';
 import { useAirspaceData } from '../hooks/useAirspaceData';
+import { useIsMobile, useIsTouchDevice } from '../hooks/useIsMobile';
 import type { TerminalArea } from '../config/terminalAreas';
 import { InfoPanel } from './InfoPanel';
 import { Legend } from './Legend';
@@ -13,6 +14,7 @@ import { AltitudeScale } from './AltitudeScale';
 import { BrowserNotice } from './BrowserNotice';
 import { TerminalAreaSelector } from './TerminalAreaSelector';
 import { ContactModal } from './ContactModal';
+import { MobileMenu } from './MobileMenu';
 import { formatAltitude } from '../utils/altitudeUtils';
 import { getOutlineColor, HIGHLIGHT_COLORS } from '../utils/colorUtils';
 import type { ProcessedAirspace } from '../types/airspace';
@@ -58,6 +60,10 @@ export function Map3D({ terminalArea }: Map3DProps) {
   const [showClassE, setShowClassE] = useState(false);
   const [showHelpOverlay, setShowHelpOverlay] = useState(true);
   const [viewState, setViewState] = useState(getInitialView(terminalArea));
+
+  // Responsive hooks
+  const isMobile = useIsMobile();
+  const isTouch = useIsTouchDevice();
 
   // Reset view when terminal area changes
   React.useEffect(() => {
@@ -247,7 +253,9 @@ export function Map3D({ terminalArea }: Map3DProps) {
     ]
   }), []);
 
-  const showProfile = true;
+  // Responsive layout: hide profile and altitude scale on mobile
+  const showProfile = !isMobile;
+  const showAltitudeScale = !isMobile;
   const show3D = true;
 
   return (
@@ -277,46 +285,48 @@ export function Map3D({ terminalArea }: Map3DProps) {
         <TerminalAreaSelector selectedArea={terminalArea} />
       </div>
 
-      {/* Title - compact dark box, centered */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          textAlign: 'center',
-          background: 'rgba(15, 23, 42, 0.9)',
-          backdropFilter: 'blur(8px)',
-          padding: '8px 16px',
-          borderRadius: '6px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          zIndex: 100,
-        }}
-      >
-        <h1
+      {/* Title - compact dark box, centered (hidden on mobile to save space) */}
+      {!isMobile && (
+        <div
           style={{
-            fontSize: '15px',
-            fontWeight: 600,
-            color: '#f8fafc',
-            letterSpacing: '-0.01em',
-            margin: 0,
+            position: 'absolute',
+            top: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            textAlign: 'center',
+            background: 'rgba(15, 23, 42, 0.9)',
+            backdropFilter: 'blur(8px)',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            zIndex: 100,
           }}
         >
-          {terminalArea.name} Airspace
-        </h1>
-        <p
-          className="mono"
-          style={{
-            fontSize: '10px',
-            color: 'rgba(148, 163, 184, 0.9)',
-            marginTop: '2px',
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {terminalArea.id} • 3D Visualization
-        </p>
-      </div>
+          <h1
+            style={{
+              fontSize: '15px',
+              fontWeight: 600,
+              color: '#f8fafc',
+              letterSpacing: '-0.01em',
+              margin: 0,
+            }}
+          >
+            {terminalArea.name} Airspace
+          </h1>
+          <p
+            className="mono"
+            style={{
+              fontSize: '10px',
+              color: 'rgba(148, 163, 184, 0.9)',
+              marginTop: '2px',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {terminalArea.id} • 3D Visualization
+          </p>
+        </div>
+      )}
 
       {/* Hover tooltip */}
       {hoverInfo && show3D && (
@@ -466,8 +476,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
         </div>
       )}
 
-      {/* Altitude scale */}
-      {show3D && data && (
+      {/* Mobile-only hamburger menu - top right */}
+      {isMobile && (
+        <MobileMenu onShowHelp={() => setShowHelpOverlay(true)} />
+      )}
+
+      {/* Altitude scale - hidden on mobile */}
+      {showAltitudeScale && data && (
         <AltitudeScale
           key={`scale-${terminalArea.id}`}
           airspaces={data}
@@ -482,8 +497,8 @@ export function Map3D({ terminalArea }: Map3DProps) {
         onClose={() => setSelectedAirspace(null)}
       />
 
-      {/* Legend */}
-      {show3D && <Legend compact={!!selectedAirspace} showClassE={showClassE} onShowClassEChange={setShowClassE} />}
+      {/* Legend - hidden on mobile */}
+      {show3D && !isMobile && <Legend compact={!!selectedAirspace} showClassE={showClassE} onShowClassEChange={setShowClassE} />}
 
       {/* Loading overlay */}
       {loading && (
@@ -580,7 +595,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
         </div>
       )}
 
-      {/* Help overlay */}
+      {/* Help overlay - responsive for touch/mouse */}
       {showHelpOverlay && !loading && (
         <div
           onClick={() => setShowHelpOverlay(false)}
@@ -597,87 +612,153 @@ export function Map3D({ terminalArea }: Map3DProps) {
             justifyContent: 'center',
             zIndex: 3000,
             cursor: 'pointer',
+            padding: isMobile ? '1rem' : 0,
           }}
         >
+          {/* Touch gestures for mobile */}
+          {isTouch ? (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1.5rem',
+              padding: '0 1rem',
+              maxWidth: '320px',
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: isMobile ? '1.5rem' : '2rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  marginBottom: '0.25rem',
+                }}>
+                  ☝️ One Finger
+                </div>
+                <div style={{
+                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                }}>
+                  Pan the map
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: isMobile ? '1.5rem' : '2rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  marginBottom: '0.25rem',
+                }}>
+                  ✌️ Two Fingers
+                </div>
+                <div style={{
+                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                }}>
+                  Pinch to zoom, rotate to tilt
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: isMobile ? '1.5rem' : '2rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  marginBottom: '0.25rem',
+                }}>
+                  👆 Tap
+                </div>
+                <div style={{
+                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                }}>
+                  Select airspace
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Mouse controls for desktop */
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1.2fr 1fr',
+              alignItems: 'start',
+              gap: '2rem',
+              padding: '0 8%',
+              width: '100%',
+              maxWidth: '1400px',
+            }}>
+              <div style={{ textAlign: 'center', justifySelf: 'end', paddingRight: '2rem' }}>
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  lineHeight: 1.3,
+                }}>
+                  Left Click
+                </div>
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  lineHeight: 1.3,
+                }}>
+                  Drag
+                </div>
+              </div>
+              <div style={{ textAlign: 'center', justifySelf: 'center' }}>
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  lineHeight: 1.3,
+                }}>
+                  Mouse Wheel
+                </div>
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  lineHeight: 1.3,
+                }}>
+                  Zoom In/Out
+                </div>
+              </div>
+              <div style={{ textAlign: 'center', justifySelf: 'start', paddingLeft: '2rem' }}>
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  lineHeight: 1.3,
+                }}>
+                  Right Click
+                </div>
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                  lineHeight: 1.3,
+                }}>
+                  Rotate and Tilt
+                </div>
+              </div>
+            </div>
+          )}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1.2fr 1fr',
-            alignItems: 'start',
-            gap: '2rem',
-            padding: '0 8%',
-            width: '100%',
-            maxWidth: '1400px',
-          }}>
-            <div style={{ textAlign: 'center', justifySelf: 'end', paddingRight: '2rem' }}>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: 600,
-                color: 'rgba(255, 255, 255, 0.9)',
-                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
-                lineHeight: 1.3,
-              }}>
-                Left Click
-              </div>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: 600,
-                color: 'rgba(255, 255, 255, 0.9)',
-                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
-                lineHeight: 1.3,
-              }}>
-                Drag
-              </div>
-            </div>
-            <div style={{ textAlign: 'center', justifySelf: 'center' }}>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: 600,
-                color: 'rgba(255, 255, 255, 0.9)',
-                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
-                lineHeight: 1.3,
-              }}>
-                Mouse Wheel
-              </div>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: 600,
-                color: 'rgba(255, 255, 255, 0.9)',
-                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
-                lineHeight: 1.3,
-              }}>
-                Zoom In/Out
-              </div>
-            </div>
-            <div style={{ textAlign: 'center', justifySelf: 'start', paddingLeft: '2rem' }}>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: 600,
-                color: 'rgba(255, 255, 255, 0.9)',
-                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
-                lineHeight: 1.3,
-              }}>
-                Right Click
-              </div>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: 600,
-                color: 'rgba(255, 255, 255, 0.9)',
-                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
-                lineHeight: 1.3,
-              }}>
-                Rotate and Tilt
-              </div>
-            </div>
-          </div>
-          <div style={{
-            fontSize: '1rem',
+            fontSize: isMobile ? '0.875rem' : '1rem',
             fontWeight: 500,
             color: 'rgba(255, 255, 255, 0.7)',
             textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-            marginTop: '3rem',
+            marginTop: '2rem',
             textAlign: 'center',
           }}>
-            Click anywhere to dismiss
+            {isTouch ? 'Tap anywhere to dismiss' : 'Click anywhere to dismiss'}
           </div>
         </div>
       )}

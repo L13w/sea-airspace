@@ -18,10 +18,10 @@ export function Legend({ compact = false, showClassE = false, onShowClassEChange
         style={{
           position: 'absolute',
           bottom: 24,
-          left: 120,
-          padding: '10px 14px',
+          left: 16,
+          padding: '8px 12px',
           display: 'flex',
-          gap: '12px',
+          gap: '10px',
         }}
       >
         {classes.map(cls => {
