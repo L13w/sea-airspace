@@ -431,7 +431,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
               Help
             </button>
             <a
-              href="https://github.com/L13w/sea-airspace"
+              href="https://github.com/L13w/airspace"
               target="_blank"
               rel="noopener noreferrer"
               className="glass-panel"

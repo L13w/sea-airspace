@@ -122,7 +122,7 @@ export function MobileMenu({ onShowHelp }: MobileMenuProps) {
               Help
             </button>
             <a
-              href="https://github.com/L13w/sea-airspace"
+              href="https://github.com/L13w/airspace"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setIsOpen(false)}
