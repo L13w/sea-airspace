@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import Map, { useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { GeoJsonLayer } from '@deck.gl/layers';
@@ -72,12 +72,22 @@ export function Map3D({ terminalArea }: Map3DProps) {
     setHoveredAirspace(null);
   }, [terminalArea]);
 
+  // Track if deck.gl handled a click (to prevent map onClick from clearing selection)
+  const deckClickHandled = useRef(false);
+
   const handleClick = useCallback((info: PickingInfo) => {
+    deckClickHandled.current = true;
     if (info.object) {
       setSelectedAirspace(info.object as ProcessedAirspace);
-    } else {
+    }
+  }, []);
+
+  const handleMapClick = useCallback(() => {
+    // Only clear selection if deck.gl didn't handle the click
+    if (!deckClickHandled.current) {
       setSelectedAirspace(null);
     }
+    deckClickHandled.current = false;
   }, []);
 
   const handleHover = useCallback((info: PickingInfo) => {
@@ -265,7 +275,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
         <Map
           {...viewState}
           onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
-          onClick={() => setSelectedAirspace(null)}
+          onClick={handleMapClick}
           maxPitch={85}
           minPitch={0}
           mapStyle={mapStyle}
