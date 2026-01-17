@@ -34,7 +34,8 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
           borderBottom: 'none',
           animation: 'slideUpMobile 0.25s ease-out',
           // Extra padding for mobile browser UI (address bar, home indicator)
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
+          // 50px fallback for browsers that don't support env()
+          paddingBottom: 'max(calc(env(safe-area-inset-bottom, 50px) + 12px), 50px)',
         }}
       >
         <style>{`
