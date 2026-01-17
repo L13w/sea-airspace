@@ -33,6 +33,8 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
           borderRadius: '16px 16px 0 0',
           borderBottom: 'none',
           animation: 'slideUpMobile 0.25s ease-out',
+          // Extra padding for mobile browser UI (address bar, home indicator)
+          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
         }}
       >
         <style>{`
