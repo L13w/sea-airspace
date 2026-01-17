@@ -12,7 +12,7 @@ function TerminalAreaPage() {
     return <Navigate to={`/${DEFAULT_TERMINAL_AREA}`} replace />;
   }
 
-  return <Map3D terminalArea={terminalArea} />;
+  return <Map3D key={terminalArea.id} terminalArea={terminalArea} />;
 }
 
 function App() {
