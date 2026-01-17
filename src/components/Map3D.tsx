@@ -294,9 +294,10 @@ export function Map3D({ terminalArea }: Map3DProps) {
         <TerminalAreaSelector selectedArea={terminalArea} />
       </div>
 
-      {/* Title - compact dark box, centered (hidden on mobile to save space) */}
+      {/* Title - compact dark box, centered (hidden on mobile and narrow screens to prevent overlap) */}
       {!isMobile && (
         <div
+          className="desktop-title"
           style={{
             position: 'absolute',
             top: 16,
@@ -311,6 +312,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
             zIndex: 100,
           }}
         >
+          <style>{`
+            @media (max-width: 1100px) {
+              .desktop-title {
+                display: none !important;
+              }
+            }
+          `}</style>
           <h1
             style={{
               fontSize: '15px',
