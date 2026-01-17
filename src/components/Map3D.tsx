@@ -677,7 +677,9 @@ export function Map3D({ terminalArea }: Map3DProps) {
                   fontSize: isMobileAny ? '1rem' : '1.25rem',
                   color: 'rgba(255, 255, 255, 0.7)',
                 }}>
-                  Pinch to zoom, drag up/down to tilt
+                  Pinch to zoom, drag up/down to tilt,
+                  <br />
+                  drag side to side to rotate
                 </div>
               </div>
               <div style={{ textAlign: 'center' }}>
