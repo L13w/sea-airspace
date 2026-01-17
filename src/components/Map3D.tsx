@@ -822,7 +822,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
             e.currentTarget.style.textDecoration = 'none';
           }}
         >
-          Llew Roberts
+          Inertial Navigation LLC
         </a>
       </div>
     </div>
