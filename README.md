@@ -2,7 +2,7 @@
 
 An interactive web-based 3D visualization of FAA airspace boundaries, rendering controlled airspace as volumetric "wedding cake" structures. Explore Class B, C, D, and E airspace for 32 US terminal areas.
 
-**Live Demo**: [airspace.llew.me](https://airspace.llew.me)
+**Live Demo**: [airspace.llew.net](https://airspace.llew.net)
 
 ## Features
 
