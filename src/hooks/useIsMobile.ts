@@ -39,3 +39,30 @@ export function useIsTouchDevice(): boolean {
 
   return isTouch;
 }
+
+// Detect mobile device in landscape orientation
+// This catches phones/tablets rotated to landscape where width > 768 but it's still a touch device
+export function useIsMobileLandscape(): boolean {
+  const isTouch = useIsTouchDevice();
+  const [isLandscape, setIsLandscape] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    // Landscape: width > height AND height is small (mobile-sized)
+    return window.innerWidth > window.innerHeight && window.innerHeight <= 500;
+  });
+
+  useEffect(() => {
+    const checkLandscape = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight && window.innerHeight <= 500);
+    };
+
+    checkLandscape();
+    window.addEventListener('resize', checkLandscape);
+    window.addEventListener('orientationchange', checkLandscape);
+    return () => {
+      window.removeEventListener('resize', checkLandscape);
+      window.removeEventListener('orientationchange', checkLandscape);
+    };
+  }, []);
+
+  return isTouch && isLandscape;
+}

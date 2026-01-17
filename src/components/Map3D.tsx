@@ -5,7 +5,7 @@ import { GeoJsonLayer } from '@deck.gl/layers';
 import type { MapboxOverlayProps } from '@deck.gl/mapbox';
 import type { PickingInfo } from '@deck.gl/core';
 import { useAirspaceData } from '../hooks/useAirspaceData';
-import { useIsMobile, useIsTouchDevice } from '../hooks/useIsMobile';
+import { useIsMobile, useIsTouchDevice, useIsMobileLandscape } from '../hooks/useIsMobile';
 import type { TerminalArea } from '../config/terminalAreas';
 import { InfoPanel } from './InfoPanel';
 import { Legend } from './Legend';
@@ -62,6 +62,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
   // Responsive hooks
   const isMobile = useIsMobile();
   const isTouch = useIsTouchDevice();
+  const isMobileLandscape = useIsMobileLandscape();
 
   // Reset view when terminal area changes
   React.useEffect(() => {
@@ -261,10 +262,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
     ]
   }), []);
 
-  // Responsive layout: hide profile and altitude scale on mobile
-  const showProfile = !isMobile;
-  const showAltitudeScale = !isMobile;
+  // Responsive layout: hide profile and altitude scale on mobile (portrait or landscape)
+  const showProfile = !isMobile && !isMobileLandscape;
+  const showAltitudeScale = !isMobile && !isMobileLandscape;
   const show3D = true;
+
+  // Combine mobile states for simpler conditionals
+  const isMobileAny = isMobile || isMobileLandscape;
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', background: 'var(--bg-primary)' }}>
@@ -295,7 +299,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
       </div>
 
       {/* Title - compact dark box, centered (hidden on mobile and narrow screens to prevent overlap) */}
-      {!isMobile && (
+      {!isMobileAny && (
         <div
           className="desktop-title"
           style={{
@@ -346,7 +350,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
       )}
 
       {/* Hover tooltip - hidden on mobile when airspace is selected */}
-      {hoverInfo && show3D && !(isMobile && selectedAirspace) && (
+      {hoverInfo && show3D && !(isMobileAny && selectedAirspace) && (
         <div
           className="glass-panel animate-fade-in"
           style={{
@@ -494,7 +498,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
       )}
 
       {/* Mobile-only hamburger menu - top right */}
-      {isMobile && (
+      {isMobileAny && (
         <MobileMenu onShowHelp={() => setShowHelpOverlay(true)} />
       )}
 
@@ -515,7 +519,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
       />
 
       {/* Legend - hidden on mobile */}
-      {show3D && !isMobile && <Legend compact={!!selectedAirspace} showClassE={showClassE} onShowClassEChange={setShowClassE} />}
+      {show3D && !isMobileAny && <Legend compact={!!selectedAirspace} showClassE={showClassE} onShowClassEChange={setShowClassE} />}
 
       {/* Loading overlay */}
       {loading && (
@@ -629,7 +633,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
             justifyContent: 'center',
             zIndex: 3000,
             cursor: 'pointer',
-            padding: isMobile ? '1rem' : 0,
+            padding: isMobileAny ? '1rem' : 0,
           }}
         >
           {/* Touch gestures for mobile */}
@@ -644,7 +648,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
             }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontSize: isMobile ? '1.5rem' : '2rem',
+                  fontSize: isMobileAny ? '1.5rem' : '2rem',
                   fontWeight: 600,
                   color: 'rgba(255, 255, 255, 0.9)',
                   textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
@@ -653,7 +657,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
                   ☝️ One Finger
                 </div>
                 <div style={{
-                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  fontSize: isMobileAny ? '1rem' : '1.25rem',
                   color: 'rgba(255, 255, 255, 0.7)',
                 }}>
                   Pan the map
@@ -661,7 +665,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
               </div>
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontSize: isMobile ? '1.5rem' : '2rem',
+                  fontSize: isMobileAny ? '1.5rem' : '2rem',
                   fontWeight: 600,
                   color: 'rgba(255, 255, 255, 0.9)',
                   textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
@@ -670,7 +674,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
                   ✌️ Two Fingers
                 </div>
                 <div style={{
-                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  fontSize: isMobileAny ? '1rem' : '1.25rem',
                   color: 'rgba(255, 255, 255, 0.7)',
                 }}>
                   Pinch to zoom, drag up/down to tilt
@@ -678,7 +682,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
               </div>
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontSize: isMobile ? '1.5rem' : '2rem',
+                  fontSize: isMobileAny ? '1.5rem' : '2rem',
                   fontWeight: 600,
                   color: 'rgba(255, 255, 255, 0.9)',
                   textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
@@ -687,7 +691,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
                   👆 Tap
                 </div>
                 <div style={{
-                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  fontSize: isMobileAny ? '1rem' : '1.25rem',
                   color: 'rgba(255, 255, 255, 0.7)',
                 }}>
                   Select airspace
@@ -768,7 +772,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
             </div>
           )}
           <div style={{
-            fontSize: isMobile ? '0.875rem' : '1rem',
+            fontSize: isMobileAny ? '0.875rem' : '1rem',
             fontWeight: 500,
             color: 'rgba(255, 255, 255, 0.7)',
             textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
@@ -783,32 +787,35 @@ export function Map3D({ terminalArea }: Map3DProps) {
       {/* Browser compatibility notice */}
       <BrowserNotice />
 
-      {/* Copyright notice at bottom */}
+      {/* Copyright notice at bottom - positioned above safe area on mobile */}
       <div
         style={{
           position: 'absolute',
-          bottom: 16,
+          bottom: isMobileAny ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
           left: '50%',
           transform: 'translateX(-50%)',
           fontSize: '12px',
-          color: 'var(--text-muted)',
+          color: 'rgba(255, 255, 255, 0.7)',
           zIndex: 100,
+          textShadow: '0 1px 3px rgba(0, 0, 0, 0.8)',
+          fontWeight: 500,
+          pointerEvents: 'auto',
         }}
       >
-        © 2024{' '}
+        © 2026{' '}
         <a
           href="mailto:llew@llew.net"
           style={{
-            color: 'var(--text-muted)',
+            color: 'rgba(255, 255, 255, 0.7)',
             textDecoration: 'none',
             transition: 'color 0.15s ease',
           }}
           onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.color = '#ffffff';
             e.currentTarget.style.textDecoration = 'underline';
           }}
           onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.currentTarget.style.color = 'var(--text-muted)';
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
             e.currentTarget.style.textDecoration = 'none';
           }}
         >
