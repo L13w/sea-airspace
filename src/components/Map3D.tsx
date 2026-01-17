@@ -265,6 +265,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
         <Map
           {...viewState}
           onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
+          onClick={() => setSelectedAirspace(null)}
           maxPitch={85}
           minPitch={0}
           mapStyle={mapStyle}
