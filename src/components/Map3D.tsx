@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import Map, { useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { GeoJsonLayer } from '@deck.gl/layers';
@@ -324,6 +324,71 @@ export function Map3D() {
         </div>
       )}
 
+      {/* Action buttons */}
+      <div
+        style={{
+          position: 'absolute',
+          right: 352,
+          top: 16,
+          display: 'flex',
+          gap: '8px',
+        }}
+      >
+        <button
+          onClick={() => setShowHelpOverlay(true)}
+          className="glass-panel"
+          style={{
+            padding: '8px 14px',
+            fontSize: '12px',
+            fontWeight: 500,
+            color: 'var(--text-secondary)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.borderColor = 'var(--border-default)';
+          }}
+          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+          }}
+        >
+          Help
+        </button>
+        <a
+          href="https://github.com/L13w/sea-airspace"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="glass-panel"
+          style={{
+            padding: '8px 14px',
+            fontSize: '12px',
+            fontWeight: 500,
+            color: 'var(--text-secondary)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            textDecoration: 'none',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
+            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.borderColor = 'var(--border-default)';
+          }}
+          onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
+            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+          }}
+        >
+          Code &amp; Docs
+        </a>
+      </div>
+
       {/* Profile view */}
       {showProfile && data && (
         <AirspaceProfile
@@ -458,82 +523,94 @@ export function Map3D() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.6)',
+            background: 'rgba(0, 0, 0, 0.65)',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'space-around',
+            justifyContent: 'center',
             zIndex: 3000,
             cursor: 'pointer',
           }}
         >
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: '2.5rem',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.85)',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-              lineHeight: 1.3,
-            }}>
-              Left Click
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1.2fr 1fr',
+            alignItems: 'start',
+            gap: '2rem',
+            padding: '0 8%',
+            width: '100%',
+            maxWidth: '1400px',
+          }}>
+            <div style={{ textAlign: 'center', justifySelf: 'end', paddingRight: '2rem' }}>
+              <div style={{
+                fontSize: '2.5rem',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                lineHeight: 1.3,
+              }}>
+                Left Click
+              </div>
+              <div style={{
+                fontSize: '2.5rem',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                lineHeight: 1.3,
+              }}>
+                Drag
+              </div>
             </div>
-            <div style={{
-              fontSize: '2.5rem',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.85)',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-              lineHeight: 1.3,
-            }}>
-              Drag
+            <div style={{ textAlign: 'center', justifySelf: 'center' }}>
+              <div style={{
+                fontSize: '2.5rem',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                lineHeight: 1.3,
+              }}>
+                Mouse Wheel
+              </div>
+              <div style={{
+                fontSize: '2.5rem',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                lineHeight: 1.3,
+              }}>
+                Zoom In/Out
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', justifySelf: 'start', paddingLeft: '2rem' }}>
+              <div style={{
+                fontSize: '2.5rem',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                lineHeight: 1.3,
+              }}>
+                Right Click
+              </div>
+              <div style={{
+                fontSize: '2.5rem',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+                lineHeight: 1.3,
+              }}>
+                Rotate and Tilt
+              </div>
             </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: '2.5rem',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.85)',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-              lineHeight: 1.3,
-            }}>
-              Mouse Wheel
-            </div>
-            <div style={{
-              fontSize: '2.5rem',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.85)',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-              lineHeight: 1.3,
-            }}>
-              Zoom In/Out
-            </div>
-            <div style={{
-              fontSize: '1rem',
-              fontWeight: 500,
-              color: 'rgba(255, 255, 255, 0.85)',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-              marginTop: '2rem',
-            }}>
-              Click anywhere to dismiss
-            </div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: '2.5rem',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.85)',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-              lineHeight: 1.3,
-            }}>
-              Right Click
-            </div>
-            <div style={{
-              fontSize: '2.5rem',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.85)',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-              lineHeight: 1.3,
-            }}>
-              Rotate and Tilt
-            </div>
+          <div style={{
+            fontSize: '1rem',
+            fontWeight: 500,
+            color: 'rgba(255, 255, 255, 0.7)',
+            textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
+            marginTop: '3rem',
+            textAlign: 'center',
+          }}>
+            Click anywhere to dismiss
           </div>
         </div>
       )}
