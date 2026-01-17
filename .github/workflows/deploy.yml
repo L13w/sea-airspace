@@ -1,0 +1,58 @@
+name: Build and Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP: sea-airspace-rg
+  ACR_NAME: seaairspaceacr
+  CONTAINER_NAME: seaairspace-container
+  IMAGE_NAME: airspace-visualizer
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+
+      - name: Deploy to Azure Container Instance
+        run: |
+          az container delete --name ${{ env.CONTAINER_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --yes || true
+          az container create \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.CONTAINER_NAME }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --registry-login-server ${{ env.ACR_NAME }}.azurecr.io \
+            --registry-username ${{ secrets.ACR_USERNAME }} \
+            --registry-password ${{ secrets.ACR_PASSWORD }} \
+            --dns-name-label seaairspace \
+            --ports 80 \
+            --cpu 1 \
+            --memory 1 \
+            --os-type Linux \
+            --restart-policy Always
+
+      - name: Get deployment URL
+        run: |
+          FQDN=$(az container show --name ${{ env.CONTAINER_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query ipAddress.fqdn -o tsv)
+          echo "Deployed to: http://$FQDN"
