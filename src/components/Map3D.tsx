@@ -13,7 +13,6 @@ import { AirspaceProfile } from './AirspaceProfile';
 import { AltitudeScale } from './AltitudeScale';
 import { BrowserNotice } from './BrowserNotice';
 import { TerminalAreaSelector } from './TerminalAreaSelector';
-import { ContactModal } from './ContactModal';
 import { MobileMenu } from './MobileMenu';
 import { formatAltitude } from '../utils/altitudeUtils';
 import { getOutlineColor, HIGHLIGHT_COLORS } from '../utils/colorUtils';
@@ -52,7 +51,6 @@ interface Map3DProps {
 }
 
 export function Map3D({ terminalArea }: Map3DProps) {
-  const [contactModalOpen, setContactModalOpen] = useState(false);
   const { data, loading, error } = useAirspaceData(terminalArea);
   const [selectedAirspace, setSelectedAirspace] = useState<ProcessedAirspace | null>(null);
   const [hoveredAirspace, setHoveredAirspace] = useState<ProcessedAirspace | null>(null);
@@ -777,60 +775,38 @@ export function Map3D({ terminalArea }: Map3DProps) {
       {/* Browser compatibility notice */}
       <BrowserNotice />
 
-      {/* Contact link at bottom */}
-      <button
-        onClick={() => setContactModalOpen(true)}
+      {/* Copyright notice at bottom */}
+      <div
         style={{
           position: 'absolute',
           bottom: 16,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '8px 16px',
-          borderRadius: '6px',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-        }}
-        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-          e.currentTarget.style.background = 'transparent';
+          fontSize: '12px',
+          color: 'var(--text-muted)',
+          zIndex: 100,
         }}
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--text-muted)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-          <polyline points="22,6 12,13 2,6" />
-        </svg>
-        <span
+        © 2024{' '}
+        <a
+          href="mailto:llew@llew.net"
           style={{
-            fontSize: '12px',
             color: 'var(--text-muted)',
-            fontWeight: 500,
+            textDecoration: 'none',
+            transition: 'color 0.15s ease',
+          }}
+          onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
+            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.textDecoration = 'underline';
+          }}
+          onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
+            e.currentTarget.style.color = 'var(--text-muted)';
+            e.currentTarget.style.textDecoration = 'none';
           }}
         >
-          Contact
-        </span>
-      </button>
-
-      {/* Contact Modal */}
-      <ContactModal
-        isOpen={contactModalOpen}
-        onClose={() => setContactModalOpen(false)}
-      />
+          Llew Roberts
+        </a>
+      </div>
     </div>
   );
 }
