@@ -1,7 +1,7 @@
 import type { ProcessedAirspace } from '../types/airspace';
 import { formatAltitude, metersToFeet } from '../utils/altitudeUtils';
 import { getAirspaceColorCSS, getAirspaceGlowCSS, CLASS_DESCRIPTIONS } from '../utils/colorUtils';
-import { useIsMobile } from '../hooks/useIsMobile';
+import { useIsMobile, useIsMobileLandscape } from '../hooks/useIsMobile';
 
 interface InfoPanelProps {
   airspace: ProcessedAirspace | null;
@@ -10,6 +10,8 @@ interface InfoPanelProps {
 
 export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
   const isMobile = useIsMobile();
+  const isMobileLandscape = useIsMobileLandscape();
+  const isMobileAny = isMobile || isMobileLandscape;
 
   if (!airspace) return null;
 
@@ -19,13 +21,23 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
   const glow = getAirspaceGlowCSS(properties.CLASS);
   const description = CLASS_DESCRIPTIONS[properties.CLASS];
 
-  // Mobile: compact bottom bar
-  if (isMobile) {
-    return (
-      <div
-        className="glass-panel"
-        style={{
-          position: 'absolute',
+  // Mobile (portrait or landscape): compact panel
+  if (isMobileAny) {
+    // Different positioning for landscape vs portrait
+    const panelStyle = isMobileLandscape
+      ? {
+          // Landscape: lower left corner, rounded card
+          position: 'absolute' as const,
+          bottom: 16,
+          left: 16,
+          maxWidth: '400px',
+          overflow: 'hidden',
+          borderRadius: '12px',
+          animation: 'slideInLeft 0.25s ease-out',
+        }
+      : {
+          // Portrait: full-width bottom bar
+          position: 'absolute' as const,
           bottom: 0,
           left: 0,
           right: 0,
@@ -34,9 +46,13 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
           borderBottom: 'none',
           animation: 'slideUpMobile 0.25s ease-out',
           // Extra padding for mobile browser UI (address bar, home indicator)
-          // 50px fallback for browsers that don't support env()
           paddingBottom: 'max(calc(env(safe-area-inset-bottom, 50px) + 12px), 50px)',
-        }}
+        };
+
+    return (
+      <div
+        className="glass-panel"
+        style={panelStyle}
       >
         <style>{`
           @keyframes slideUpMobile {
@@ -49,6 +65,16 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
               transform: translateY(0);
             }
           }
+          @keyframes slideInLeft {
+            from {
+              opacity: 0;
+              transform: translateX(-100%);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
         `}</style>
 
         {/* Content row */}
@@ -56,7 +82,7 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            padding: '12px 16px 16px',
+            padding: isMobileLandscape ? '12px 16px' : '12px 16px 16px',
             gap: '12px',
           }}
         >
