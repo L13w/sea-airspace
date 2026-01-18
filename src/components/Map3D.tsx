@@ -679,7 +679,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
                 }}>
                   Pinch to zoom, drag up/down to tilt,
                   <br />
-                  drag side to side to rotate
+                  twist to rotate
                 </div>
               </div>
               <div style={{ textAlign: 'center' }}>
