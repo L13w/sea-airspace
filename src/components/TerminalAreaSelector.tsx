@@ -34,11 +34,13 @@ export function TerminalAreaSelector({ selectedArea }: TerminalAreaSelectorProps
     }
   }, [isOpen, isMobile]);
 
-  // Filter areas based on search
-  const filteredAreas = TERMINAL_AREAS.filter(area =>
-    area.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    area.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter and sort areas alphabetically by name
+  const filteredAreas = TERMINAL_AREAS
+    .filter(area =>
+      area.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      area.id.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const handleSelect = (area: TerminalArea) => {
     setIsOpen(false);

@@ -29,7 +29,7 @@ export const TERMINAL_AREAS: TerminalArea[] = [
     productId: 'TSEA',
     centerLat: 47.45,
     centerLng: -122.30,
-    bounds: { minLat: 46.50, maxLat: 48.40, minLng: -123.30, maxLng: -121.30 },
+    bounds: { minLat: 46.50, maxLat: 49.00, minLng: -123.30, maxLng: -121.30 },
     sectionalChart: 'Seattle',
   },
   {
