@@ -3,6 +3,12 @@ node_modules/
 
 # Build output
 dist/
+dist-*/
+*.tar.gz
+*.zip
+
+# Docker (local testing)
+docker-compose.yml
 
 # Environment files (keep .env.example if needed)
 .env
