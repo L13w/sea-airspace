@@ -808,6 +808,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
         © 2026{' '}
         <a
           href="mailto:Llew Roberts <llew@llew.net>"
+          title="Click to send email with comments, questions, bugs, or feedback"
           style={{
             color: 'rgba(255, 255, 255, 0.9)',
             textDecoration: 'none',

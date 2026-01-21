@@ -119,7 +119,7 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
               style={{
                 fontSize: '14px',
                 fontWeight: 600,
-                color: 'var(--text-primary)',
+                color: 'var(--text-primary, #f1f5f9)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -130,7 +130,7 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
             <div
               style={{
                 fontSize: '11px',
-                color: 'var(--text-muted)',
+                color: 'var(--text-muted, #64748b)',
                 marginTop: '2px',
               }}
             >
@@ -152,7 +152,7 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
               style={{
                 fontSize: '13px',
                 fontWeight: 600,
-                color: 'var(--text-primary)',
+                color: 'var(--text-primary, #f1f5f9)',
                 lineHeight: 1.2,
               }}
             >
@@ -161,7 +161,7 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
             <div
               style={{
                 fontSize: '9px',
-                color: 'var(--text-muted)',
+                color: 'var(--text-muted, #64748b)',
                 margin: '1px 0',
               }}
             >
@@ -172,7 +172,7 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
               style={{
                 fontSize: '13px',
                 fontWeight: 600,
-                color: 'var(--text-primary)',
+                color: 'var(--text-primary, #f1f5f9)',
                 lineHeight: 1.2,
               }}
             >
@@ -209,9 +209,9 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
               width: '36px',
               height: '36px',
               borderRadius: '8px',
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-tertiary)',
-              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-subtle, rgba(148, 163, 184, 0.1))',
+              background: 'var(--bg-tertiary, #1a202a)',
+              color: 'var(--text-secondary, #94a3b8)',
               fontSize: '18px',
               cursor: 'pointer',
               display: 'flex',
