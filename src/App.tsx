@@ -17,7 +17,7 @@ function TerminalAreaPage() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         {/* Default route redirects to Seattle */}
         <Route path="/" element={<Navigate to={`/${DEFAULT_TERMINAL_AREA}`} replace />} />
