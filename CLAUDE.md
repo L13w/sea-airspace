@@ -39,3 +39,31 @@ To update the container with code changes:
 2. Restart the container: `docker.exe stop airspace && docker.exe rm airspace && docker.exe run -d --name airspace -p 8080:80 airspace-visualizer`
 
 There is no docker-compose.yml file - the container is run directly with `docker run`.
+
+## Emergency Commands
+
+### Fix Oversized Image Bug
+When I say "fix image bug" or "fix session images", run this repair:
+
+1. **Session selection** (first matching option):
+   - Explicit path provided → use that file
+   - Session ID provided → find matching .jsonl in ~/.claude/projects/*/
+   - "list sessions" → show all sessions (ID, size, date, first prompt) and wait for selection
+   - Custom directory provided → search there instead
+   - Default → auto-detect by scanning recent .jsonl files for lines >5,242,880 bytes
+
+2. Backup: copy to `.backup` extension
+
+3. Identify oversized image lines (>5,242,880 bytes per line) using:
+   - `grep -n '"type":"image"' <file>` for line numbers
+   - Check line sizes with `sed -n '<N>p' <file> | wc -c`
+
+4. Replace oversized lines with: `{"type":"summary","summary":"[Image removed - exceeded 5MB limit]","uuid":"REMOVED-<line-number>"}`
+
+5. Report: file path, images removed, size reduction
+
+6. Provide resume instructions:
+   - Terminal: `claude --resume <session-id>`
+   - VSCode: Reload window, then use session picker
+
+Be idempotent. Skip lines with "REMOVED-" in uuid. Report if no oversized images found.

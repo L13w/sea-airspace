@@ -36,6 +36,20 @@ export const AIRSPACE_COLORS: Record<string, {
     cssGlow: 'rgba(244, 114, 182, 0.3)',
     label: 'Class E'
   },
+  P: {
+    fill: [239, 68, 68, 100],       // Red - Prohibited areas (no entry)
+    stroke: [239, 68, 68, 255],
+    css: '#ef4444',
+    cssGlow: 'rgba(239, 68, 68, 0.5)',
+    label: 'Prohibited'
+  },
+  R: {
+    fill: [249, 115, 22, 90],       // Orange - Restricted areas (conditional)
+    stroke: [249, 115, 22, 255],
+    css: '#f97316',
+    cssGlow: 'rgba(249, 115, 22, 0.4)',
+    label: 'Restricted'
+  },
 };
 
 // Get fill color for 3D rendering (semi-transparent)
@@ -86,6 +100,16 @@ export const CLASS_DESCRIPTIONS: Record<string, {
     short: 'Controlled Transition',
     full: 'Class E - Controlled airspace',
     requirements: 'Varies by visibility/clouds'
+  },
+  P: {
+    short: 'Prohibited Area',
+    full: 'Prohibited Area - No flight permitted',
+    requirements: 'Flight prohibited at all times'
+  },
+  R: {
+    short: 'Restricted Area',
+    full: 'Restricted Area - Conditional entry',
+    requirements: 'ATC authorization required when active'
   },
 };
 

@@ -1,8 +1,11 @@
 // Convert altitude values (in feet) to meters
-export function feetValueToMeters(value: number | null): number {
+// Handles both numeric and string values (some FAA APIs return strings)
+export function feetValueToMeters(value: number | string | null): number {
   if (value === null || value === undefined) return 0;
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(numValue)) return 0;
   // value is already in feet, convert to meters
-  return value * 0.3048;
+  return numValue * 0.3048;
 }
 
 export function feetToMeters(feet: number): number {
@@ -14,7 +17,7 @@ export function metersToFeet(meters: number): number {
 }
 
 export function parseFloorAltitude(
-  lowerVal: number | null,
+  lowerVal: number | string | null,
   lowerCode: string
 ): number {
   // SFC = surface = 0
@@ -24,21 +27,33 @@ export function parseFloorAltitude(
   return feetValueToMeters(lowerVal);
 }
 
+// Maximum ceiling for visualization (18,000' MSL)
+// Restricted areas can extend to FL600 (60,000') which creates visual outliers
+// Cap the 3D extrusion while tooltip still shows actual values
+const MAX_CEILING_FEET = 18000;
+
 export function parseCeilingAltitude(
-  upperVal: number | null,
+  upperVal: number | string | null,
   _upperCode: string
 ): number {
-  if (upperVal === null) return feetValueToMeters(18000); // Default to 18,000' MSL
-  return feetValueToMeters(upperVal);
+  if (upperVal === null) return feetValueToMeters(MAX_CEILING_FEET);
+  const numValue = typeof upperVal === 'string' ? parseFloat(upperVal) : upperVal;
+  if (isNaN(numValue)) return feetValueToMeters(MAX_CEILING_FEET);
+  // Cap ceiling for consistent visualization scale
+  const cappedValue = Math.min(numValue, MAX_CEILING_FEET);
+  return feetValueToMeters(cappedValue);
 }
 
 // Format altitude for display
 // The API returns values in feet directly (e.g., 5000 = 5,000 feet)
-export function formatAltitude(value: number | null, code: string): string {
+// Handles both numeric and string values (some FAA APIs return strings)
+export function formatAltitude(value: number | string | null, code: string): string {
   if (code === 'SFC') return 'Surface';
   if (value === null) return 'Unknown';
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(numValue)) return 'Unknown';
   // Value is already in feet
-  return `${value.toLocaleString()}'`;
+  return `${numValue.toLocaleString()}'`;
 }
 
 // Format meters as feet for display

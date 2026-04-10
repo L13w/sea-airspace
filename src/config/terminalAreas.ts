@@ -342,6 +342,16 @@ export const TERMINAL_AREAS: TerminalArea[] = [
     bounds: { minLat: 27.43, maxLat: 29.43, minLng: -82.31, maxLng: -80.31 },
     sectionalChart: 'Jacksonville',
   },
+  {
+    id: 'P40',
+    name: 'Camp David (P-40/R-4009)',
+    slug: 'camp-david',
+    productId: 'TWAS', // Uses Washington terminal area product
+    centerLat: 39.65,
+    centerLng: -77.47,
+    bounds: { minLat: 39.35, maxLat: 39.95, minLng: -77.77, maxLng: -77.17 },
+    sectionalChart: 'Washington',
+  },
 ];
 
 // Default terminal area

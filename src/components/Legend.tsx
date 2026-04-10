@@ -7,8 +7,10 @@ interface LegendProps {
 }
 
 export function Legend({ compact = false, showClassE = false, onShowClassEChange }: LegendProps) {
-  // Filter out Class E from display unless showClassE is true
-  const allClasses = Object.keys(AIRSPACE_COLORS);
+  // Define display order: Class airspace first, then SUA (P, R)
+  // Filter out Class E unless showClassE is true
+  const classOrder = ['B', 'C', 'D', 'E', 'P', 'R'];
+  const allClasses = classOrder.filter(c => AIRSPACE_COLORS[c]);
   const classes = showClassE ? allClasses : allClasses.filter(c => c !== 'E');
 
   if (compact) {
