@@ -29,3 +29,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Personal/sensitive notes (never commit to public repo)
+azure-resources.md
