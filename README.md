@@ -4,9 +4,9 @@ An interactive web-based 3D visualization of FAA airspace boundaries, rendering 
 
 **Live Demo**: [airspace.llew.net](https://airspace.llew.net)
 
-> **Looking for the source?** The clean, public version of this project lives at **[L13w/airspace](https://github.com/L13w/airspace)** — that's the one to clone if you want to read the code or run it locally. It includes the original development prompt and a stripped-down setup with no deployment plumbing.
+> **Looking for the source?** The clean, public version of this project lives at **[L13w/airspace](https://github.com/L13w/airspace)** — that's the one to clone if you want to read the code or run it locally. It includes the original development prompt and a stripped-down setup.
 >
-> This repo (`sea-airspace`) is the deployment workspace behind the live site. It includes Azure/Docker/GitHub Pages config, iterative refinements, and infrastructure files that aren't relevant to running the app locally.
+> This repo (`sea-airspace`) is the deployment workspace behind the live site. It hosts on GitHub Pages via the workflow in `.github/workflows/deploy-github-pages.yml` and includes iterative refinements that may not have made it back upstream.
 
 ## Features
 
@@ -35,7 +35,7 @@ This project was built entirely through AI-assisted development using **Claude C
 - **deck.gl** - WebGL-powered 3D visualization
 - **MapLibre GL JS** - Map rendering (with react-map-gl)
 - **Vite** - Build tooling
-- **Docker** - Containerized deployment
+- **GitHub Pages** - Static hosting at airspace.llew.net
 
 ### Data Source
 
@@ -48,7 +48,6 @@ Base map tiles from FAA VFR Sectional Charts via ArcGIS.
 
 ### Prerequisites
 - Node.js 20+
-- Docker (optional, for containerized deployment)
 
 ### Development
 ```bash
@@ -61,14 +60,6 @@ npm run dev
 npm run build
 npm run preview
 ```
-
-### Docker
-```bash
-docker build -t airspace-visualizer .
-docker run -d --name airspace -p 8080:80 airspace-visualizer
-```
-
-Then visit http://localhost:8080
 
 ## Project Structure
 
