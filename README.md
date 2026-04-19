@@ -1,8 +1,12 @@
-# 3D Airspace Visualizer
+# 3D Airspace Visualizer (deployment repo)
 
 An interactive web-based 3D visualization of FAA airspace boundaries, rendering controlled airspace as volumetric "wedding cake" structures. Explore Class B, C, D, and E airspace for 32 US terminal areas.
 
 **Live Demo**: [airspace.llew.net](https://airspace.llew.net)
+
+> **Looking for the source?** The clean, public version of this project lives at **[L13w/airspace](https://github.com/L13w/airspace)** — that's the one to clone if you want to read the code or run it locally. It includes the original development prompt and a stripped-down setup with no deployment plumbing.
+>
+> This repo (`sea-airspace`) is the deployment workspace behind the live site. It includes Azure/Docker/GitHub Pages config, iterative refinements, and infrastructure files that aren't relevant to running the app locally.
 
 ## Features
 
