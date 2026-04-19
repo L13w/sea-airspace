@@ -4,7 +4,6 @@ import { resolve } from 'path'
 import { copyFileSync } from 'fs'
 
 export default defineConfig({
-  base: '/sea-airspace/',
   plugins: [
     react(),
     {
