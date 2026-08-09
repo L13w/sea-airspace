@@ -172,13 +172,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
           return [baseColor[0], baseColor[1], baseColor[2], opacity] as [number, number, number, number];
         },
 
-        // Material for better 3D appearance
-        material: {
-          ambient: 0.6,
-          diffuse: 0.8,
-          shininess: 32,
-          specularColor: [60, 64, 70],
-        },
+        // NOTE: `material: {...}` (Phong lighting) removed 2026-08-09 as part of
+        // iOS Safari render investigation. Deck.gl v9's lighting shader compiles
+        // but silently produces no output on some Apple GPU drivers, causing all
+        // layers to disappear. Unlit is a fine visual fallback (loses specular
+        // highlights, keeps solid 3D volumes). Restore only after verifying
+        // rendering works with material on iOS Safari.
+        material: false,
 
         // Interactivity
         onClick: handleClick,
