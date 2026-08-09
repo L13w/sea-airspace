@@ -12,6 +12,7 @@ import { Legend } from './Legend';
 import { AirspaceProfile } from './AirspaceProfile';
 import { AltitudeScale } from './AltitudeScale';
 import { BrowserNotice } from './BrowserNotice';
+import { DebugPanel } from './DebugPanel';
 import { TerminalAreaSelector } from './TerminalAreaSelector';
 import { MobileMenu } from './MobileMenu';
 import { formatAltitude } from '../utils/altitudeUtils';
@@ -58,6 +59,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
   const [showClassE, setShowClassE] = useState(false);
   const [showHelpOverlay, setShowHelpOverlay] = useState(true);
   const [viewState, setViewState] = useState(getInitialView(terminalArea));
+  const [deckErrors, setDeckErrors] = useState<string[]>([]);
 
   // Responsive hooks
   const isMobile = useIsMobile();
@@ -287,7 +289,16 @@ export function Map3D({ terminalArea }: Map3DProps) {
               Overlaid mode (default) puts deck.gl on its own canvas + context.
               Since the base map is a single raster layer with no 3D terrain/buildings
               to depth-test against, overlaid gives identical output on all browsers. */}
-          <DeckGLOverlay layers={layers} />
+          <DeckGLOverlay
+            layers={layers}
+            onError={(err: Error) => {
+              const msg = `${err.name || 'Error'}: ${err.message || String(err)}`.slice(0, 250);
+              setDeckErrors((prev) => (prev.includes(msg) ? prev : [...prev, msg].slice(-5)));
+              // Also log to console for Web Inspector viewing.
+              // eslint-disable-next-line no-console
+              console.error('deck.gl error:', err);
+            }}
+          />
         </Map>
       )}
 
@@ -793,6 +804,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
 
       {/* Browser compatibility notice */}
       <BrowserNotice />
+
+      {/* Debug panel (only visible with ?debug=1) */}
+      <DebugPanel
+        layerCount={layers.length}
+        featureCount={data?.length ?? 0}
+        deckErrors={deckErrors}
+      />
 
       {/* Copyright notice at bottom - fixed position to escape map stacking context */}
       <div
