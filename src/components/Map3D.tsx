@@ -282,7 +282,12 @@ export function Map3D({ terminalArea }: Map3DProps) {
           minPitch={0}
           mapStyle={mapStyle}
         >
-          <DeckGLOverlay layers={layers} interleaved />
+          {/* NOTE: no `interleaved` prop — that mode makes deck.gl share MapLibre's
+              WebGL context, which fails silently on iOS Safari (layers don't render).
+              Overlaid mode (default) puts deck.gl on its own canvas + context.
+              Since the base map is a single raster layer with no 3D terrain/buildings
+              to depth-test against, overlaid gives identical output on all browsers. */}
+          <DeckGLOverlay layers={layers} />
         </Map>
       )}
 
