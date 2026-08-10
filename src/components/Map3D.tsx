@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import Map from 'react-map-gl/maplibre';
-import DeckGL from '@deck.gl/react';
-import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
+import Map, { useControl } from 'react-map-gl/maplibre';
+import { MapboxOverlay } from '@deck.gl/mapbox';
+import { GeoJsonLayer } from '@deck.gl/layers';
+import type { MapboxOverlayProps } from '@deck.gl/mapbox';
 import type { PickingInfo } from '@deck.gl/core';
 import { useAirspaceData } from '../hooks/useAirspaceData';
 import { useIsMobile, useIsTouchDevice, useIsMobileLandscape } from '../hooks/useIsMobile';
@@ -11,7 +12,6 @@ import { Legend } from './Legend';
 import { AirspaceProfile } from './AirspaceProfile';
 import { AltitudeScale } from './AltitudeScale';
 import { BrowserNotice } from './BrowserNotice';
-import { DebugPanel } from './DebugPanel';
 import { TerminalAreaSelector } from './TerminalAreaSelector';
 import { MobileMenu } from './MobileMenu';
 import { formatAltitude } from '../utils/altitudeUtils';
@@ -33,6 +33,13 @@ function getInitialView(area: TerminalArea) {
 // Vertical exaggeration factor - makes altitude differences visible
 const ALTITUDE_EXAGGERATION = 16.7;
 
+// deck.gl overlay component using react-map-gl's useControl hook
+function DeckGLOverlay(props: MapboxOverlayProps) {
+  const overlay = useControl(() => new MapboxOverlay(props));
+  overlay.setProps(props);
+  return null;
+}
+
 interface HoverInfo {
   x: number;
   y: number;
@@ -51,7 +58,6 @@ export function Map3D({ terminalArea }: Map3DProps) {
   const [showClassE, setShowClassE] = useState(false);
   const [showHelpOverlay, setShowHelpOverlay] = useState(true);
   const [viewState, setViewState] = useState(getInitialView(terminalArea));
-  const [deckErrors, setDeckErrors] = useState<string[]>([]);
 
   // Responsive hooks
   const isMobile = useIsMobile();
@@ -164,13 +170,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
           return [baseColor[0], baseColor[1], baseColor[2], opacity] as [number, number, number, number];
         },
 
-        // NOTE: `material: {...}` (Phong lighting) removed 2026-08-09 as part of
-        // iOS Safari render investigation. Deck.gl v9's lighting shader compiles
-        // but silently produces no output on some Apple GPU drivers, causing all
-        // layers to disappear. Unlit is a fine visual fallback (loses specular
-        // highlights, keeps solid 3D volumes). Restore only after verifying
-        // rendering works with material on iOS Safari.
-        material: false,
+        // Material for better 3D appearance
+        material: {
+          ambient: 0.6,
+          diffuse: 0.8,
+          shininess: 32,
+          specularColor: [60, 64, 70],
+        },
 
         // Interactivity
         onClick: handleClick,
@@ -229,32 +235,8 @@ export function Map3D({ terminalArea }: Map3DProps) {
         },
       });
 
-    // DEBUG: with ?debug=1, add a giant magenta test dot at terminal-area center.
-    // ScatterplotLayer is deck.gl's simplest primitive — no extrusion, no lighting.
-    // If this renders on iOS Safari but the GeoJsonLayers don't, deck.gl itself
-    // works and the bug is specific to GeoJsonLayer/extrusion.
-    const isDebug =
-      typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).get('debug') === '1';
-    if (isDebug) {
-      const testLayer = new ScatterplotLayer({
-        id: 'ios-diag-scatter',
-        data: [{ position: [terminalArea.centerLng, terminalArea.centerLat] }],
-        getPosition: (d: { position: [number, number] }) => d.position,
-        getRadius: 8000,
-        radiusUnits: 'meters',
-        getFillColor: [255, 0, 200, 220],
-        stroked: true,
-        getLineColor: [255, 255, 255, 255],
-        getLineWidth: 400,
-        lineWidthMinPixels: 3,
-        pickable: false,
-      });
-      return [fillLayer, outlineLayer, testLayer];
-    }
-
     return [fillLayer, outlineLayer];
-  }, [sortedData, selectedAirspace, hoveredAirspace, handleClick, handleHover, terminalArea]);
+  }, [sortedData, selectedAirspace, hoveredAirspace, handleClick, handleHover]);
 
   // Create map style with the appropriate sectional chart for this terminal area
   const mapStyle = useMemo(() => ({
@@ -290,55 +272,18 @@ export function Map3D({ terminalArea }: Map3DProps) {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', background: 'var(--bg-primary)' }}>
-      {/* Map + deck.gl overlay — deck.gl owns its own canvas, controller, and
-          viewport; Map is a child that follows deck.gl's viewport. This bypasses
-          @deck.gl/mapbox's MapboxOverlay entirely — MapboxOverlay's integration
-          with react-map-gl v7 useControl silently produces no pixels on iOS
-          Safari 27 even though the canvas mounts, WebGL2 is available, and
-          layers get created. Standalone <DeckGL> uses a completely different
-          mounting path. */}
+      {/* Map container */}
       {show3D && (
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        <DeckGL
-          viewState={viewState}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onViewStateChange={(evt: any) => {
-            const vs = evt.viewState;
-            setViewState({
-              longitude: vs.longitude,
-              latitude: vs.latitude,
-              zoom: vs.zoom,
-              pitch: Math.max(0, Math.min(85, vs.pitch ?? viewState.pitch)),
-              bearing: vs.bearing ?? viewState.bearing,
-            });
-          }}
-          controller={true}
-          // Force known-good GL state. iOS Safari 27 WebKit may have changed
-          // defaults such that fragments are silently discarded. Overriding
-          // depth/cull isolates whether GL state is the issue.
-          parameters={{
-            depthCompare: 'always',
-            depthWriteEnabled: false,
-            cullMode: 'none',
-          }}
-          layers={layers}
-          onClick={(info: PickingInfo) => {
-            if (info.object) {
-              handleClick(info);
-            } else {
-              handleMapClick();
-            }
-          }}
-          onError={(err: Error) => {
-            const msg = `${err.name || 'Error'}: ${err.message || String(err)}`.slice(0, 250);
-            setDeckErrors((prev) => (prev.includes(msg) ? prev : [...prev, msg].slice(-5)));
-            // eslint-disable-next-line no-console
-            console.error('deck.gl error:', err);
-          }}
-          style={{ position: 'absolute', top: '0', left: '0', width: '100%', height: '100%' }}
+        <Map
+          {...viewState}
+          onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
+          onClick={handleMapClick}
+          maxPitch={85}
+          minPitch={0}
+          mapStyle={mapStyle}
         >
-          <Map mapStyle={mapStyle} reuseMaps />
-        </DeckGL>
+          <DeckGLOverlay layers={layers} interleaved />
+        </Map>
       )}
 
       {/* Terminal Area Selector - upper left */}
@@ -843,13 +788,6 @@ export function Map3D({ terminalArea }: Map3DProps) {
 
       {/* Browser compatibility notice */}
       <BrowserNotice />
-
-      {/* Debug panel (only visible with ?debug=1) */}
-      <DebugPanel
-        layerCount={layers.length}
-        featureCount={data?.length ?? 0}
-        deckErrors={deckErrors}
-      />
 
       {/* Copyright notice at bottom - fixed position to escape map stacking context */}
       <div
