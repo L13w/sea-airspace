@@ -1,13 +1,6 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import Map, { useControl } from 'react-map-gl/maplibre';
-import { MapboxOverlay } from '@deck.gl/mapbox';
-import { GeoJsonLayer } from '@deck.gl/layers';
-
-// deck.gl v8 has no TS types (see src/deck-gl.d.ts). Use `any` for its API surface.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MapboxOverlayProps = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PickingInfo = any;
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import Map, { Source, Layer } from 'react-map-gl/maplibre';
+import type { MapRef, MapLayerMouseEvent } from 'react-map-gl/maplibre';
 import { useAirspaceData } from '../hooks/useAirspaceData';
 import { useIsMobile, useIsTouchDevice, useIsMobileLandscape } from '../hooks/useIsMobile';
 import type { TerminalArea } from '../config/terminalAreas';
@@ -19,7 +12,6 @@ import { BrowserNotice } from './BrowserNotice';
 import { TerminalAreaSelector } from './TerminalAreaSelector';
 import { MobileMenu } from './MobileMenu';
 import { formatAltitude } from '../utils/altitudeUtils';
-import { getOutlineColor, HIGHLIGHT_COLORS } from '../utils/colorUtils';
 import type { ProcessedAirspace } from '../types/airspace';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -37,12 +29,9 @@ function getInitialView(area: TerminalArea) {
 // Vertical exaggeration factor - makes altitude differences visible
 const ALTITUDE_EXAGGERATION = 16.7;
 
-// deck.gl overlay component using react-map-gl's useControl hook
-function DeckGLOverlay(props: MapboxOverlayProps) {
-  const overlay = useControl(() => new MapboxOverlay(props));
-  overlay.setProps(props);
-  return null;
-}
+const AIRSPACE_SOURCE_ID = 'airspace-source';
+const AIRSPACE_FILL_LAYER_ID = 'airspace-fill-extrusion';
+const AIRSPACE_OUTLINE_LAYER_ID = 'airspace-outline-ground';
 
 interface HoverInfo {
   x: number;
@@ -69,44 +58,15 @@ export function Map3D({ terminalArea }: Map3DProps) {
   const isMobileLandscape = useIsMobileLandscape();
 
   // Reset view when terminal area changes
-  React.useEffect(() => {
+  useEffect(() => {
     setViewState(getInitialView(terminalArea));
     setSelectedAirspace(null);
     setHoveredAirspace(null);
   }, [terminalArea]);
 
-  // Track if deck.gl handled a click (to prevent map onClick from clearing selection)
-  const deckClickHandled = useRef(false);
-
-  const handleClick = useCallback((info: PickingInfo) => {
-    deckClickHandled.current = true;
-    if (info.object) {
-      setSelectedAirspace(info.object as ProcessedAirspace);
-    }
-  }, []);
-
-  const handleMapClick = useCallback(() => {
-    // Only clear selection if deck.gl didn't handle the click
-    if (!deckClickHandled.current) {
-      setSelectedAirspace(null);
-    }
-    deckClickHandled.current = false;
-  }, []);
-
-  const handleHover = useCallback((info: PickingInfo) => {
-    if (info.object) {
-      const obj = info.object as ProcessedAirspace;
-      setHoveredAirspace(obj);
-      setHoverInfo({
-        x: info.x,
-        y: info.y,
-        object: obj,
-      });
-    } else {
-      setHoveredAirspace(null);
-      setHoverInfo(null);
-    }
-  }, []);
+  const mapRef = useRef<MapRef | null>(null);
+  const prevSelectedIdRef = useRef<number | null>(null);
+  const prevHoveredIdRef = useRef<number | null>(null);
 
   const handleProfileClick = useCallback((airspace: ProcessedAirspace) => {
     setSelectedAirspace(airspace);
@@ -124,121 +84,133 @@ export function Map3D({ terminalArea }: Map3DProps) {
     return [...filtered].sort((a, b) => a.floorMeters - b.floorMeters);
   }, [data, showClassE]);
 
-  const layers = useMemo(() => {
-    if (!sortedData.length) return [];
+  // Feature lookup by OBJECTID (for picking-event → ProcessedAirspace round-trip).
+  const airspaceById = useMemo(() => {
+    const lookup = new window.Map<number, ProcessedAirspace>();
+    for (const d of sortedData) lookup.set(d.properties.OBJECTID, d);
+    return lookup;
+  }, [sortedData]);
 
-    const selectedId = selectedAirspace?.properties.OBJECTID;
-    const hoveredId = hoveredAirspace?.properties.OBJECTID;
+  // Flatten to a plain GeoJSON FeatureCollection whose properties MapLibre expressions
+  // can read directly (airspaceClass, extrusionHeight, objectId).
+  const airspaceGeoJSON = useMemo(() => ({
+    type: 'FeatureCollection' as const,
+    features: sortedData.map(f => ({
+      type: 'Feature' as const,
+      id: f.properties.OBJECTID,
+      geometry: f.geometry,
+      properties: {
+        objectId: f.properties.OBJECTID,
+        airspaceClass: f.properties.CLASS,
+        extrusionHeight: f.extrusionHeight,
+      },
+    })),
+  }), [sortedData]);
 
-    // Base layer - solid filled polygons for each airspace volume
-    const fillLayer = new GeoJsonLayer({
-        id: 'airspace-fill-layer',
-        data: {
-          type: 'FeatureCollection',
-          features: sortedData,
-        },
-        pickable: true,
-        stroked: false,
-        filled: true,
-        extruded: true,
-        wireframe: false,
+  // Paint expressions — per-class color/opacity baked into rgba strings so a single
+  // fill-extrusion layer covers every class (fill-extrusion-opacity is layer-scope only).
+  const fillColorExpression = useMemo(() => ([
+    'case',
+    ['boolean', ['feature-state', 'selected'], false], 'rgba(255, 255, 100, 0.78)',
+    ['boolean', ['feature-state', 'hover'], false], 'rgba(255, 200, 50, 0.70)',
+    [
+      'match',
+      ['get', 'airspaceClass'],
+      'B', 'rgba(59, 130, 246, 0.39)',
+      'C', 'rgba(168, 85, 247, 0.31)',
+      'D', 'rgba(34, 211, 238, 0.27)',
+      'E', 'rgba(244, 114, 182, 0.20)',
+      'P', 'rgba(239, 68, 68, 0.24)',
+      'R', 'rgba(249, 115, 22, 0.24)',
+      'rgba(128, 128, 128, 0.24)',
+    ],
+  ] as unknown as never), []);
 
-        // 3D configuration
-        getElevation: (d: ProcessedAirspace) => d.extrusionHeight * ALTITUDE_EXAGGERATION,
-        elevationScale: 1,
+  const outlineColorExpression = useMemo(() => ([
+    'case',
+    ['boolean', ['feature-state', 'selected'], false], '#ffc832',
+    ['boolean', ['feature-state', 'hover'], false], '#ffe696',
+    [
+      'match',
+      ['get', 'airspaceClass'],
+      'B', '#3b82f6',
+      'C', '#a855f7',
+      'D', '#22d3ee',
+      'E', '#f472b6',
+      'P', '#ef4444',
+      'R', '#f97316',
+      '#808080',
+    ],
+  ] as unknown as never), []);
 
-        // Solid fill with class-based color
-        getFillColor: (d: ProcessedAirspace) => {
-          const isSelected = d.properties.OBJECTID === selectedId;
-          const isHovered = d.properties.OBJECTID === hoveredId;
+  const outlineWidthExpression = useMemo(() => ([
+    'case',
+    ['boolean', ['feature-state', 'selected'], false], 3,
+    ['boolean', ['feature-state', 'hover'], false], 2,
+    1,
+  ] as unknown as never), []);
 
-          if (isSelected) {
-            return HIGHLIGHT_COLORS.selected;
-          }
-          if (isHovered) {
-            return HIGHLIGHT_COLORS.hover;
-          }
+  const heightExpression = useMemo(() => ([
+    '*', ['get', 'extrusionHeight'], ALTITUDE_EXAGGERATION,
+  ] as unknown as never), []);
 
-          // Use the airspace color with adjusted opacity based on class
-          const baseColor = d.color;
-          // Make Class B more visible, others slightly more transparent
-          const classOpacity: Record<string, number> = {
-            B: 100,
-            C: 80,
-            D: 70,
-            E: 50,
-          };
-          const opacity = classOpacity[d.properties.CLASS] || 60;
+  // Sync selection → MapLibre feature-state (drives fill/outline color via expressions).
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !map.getSource(AIRSPACE_SOURCE_ID)) return;
+    const newId = selectedAirspace?.properties.OBJECTID ?? null;
+    const oldId = prevSelectedIdRef.current;
+    if (oldId !== null && oldId !== newId) {
+      map.setFeatureState({ source: AIRSPACE_SOURCE_ID, id: oldId }, { selected: false });
+    }
+    if (newId !== null) {
+      map.setFeatureState({ source: AIRSPACE_SOURCE_ID, id: newId }, { selected: true });
+    }
+    prevSelectedIdRef.current = newId;
+  }, [selectedAirspace, airspaceGeoJSON]);
 
-          return [baseColor[0], baseColor[1], baseColor[2], opacity] as [number, number, number, number];
-        },
+  // Sync hover → feature-state, same pattern.
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !map.getSource(AIRSPACE_SOURCE_ID)) return;
+    const newId = hoveredAirspace?.properties.OBJECTID ?? null;
+    const oldId = prevHoveredIdRef.current;
+    if (oldId !== null && oldId !== newId) {
+      map.setFeatureState({ source: AIRSPACE_SOURCE_ID, id: oldId }, { hover: false });
+    }
+    if (newId !== null) {
+      map.setFeatureState({ source: AIRSPACE_SOURCE_ID, id: newId }, { hover: true });
+    }
+    prevHoveredIdRef.current = newId;
+  }, [hoveredAirspace, airspaceGeoJSON]);
 
-        // Material for better 3D appearance
-        material: {
-          ambient: 0.6,
-          diffuse: 0.8,
-          shininess: 32,
-          specularColor: [60, 64, 70],
-        },
+  const handleMapClick = useCallback((e: MapLayerMouseEvent) => {
+    const feature = e.features?.[0];
+    if (feature && feature.properties) {
+      const id = feature.properties.objectId as number;
+      const airspace = airspaceById.get(id);
+      if (airspace) {
+        setSelectedAirspace(airspace);
+        return;
+      }
+    }
+    setSelectedAirspace(null);
+  }, [airspaceById]);
 
-        // Interactivity
-        onClick: handleClick,
-        onHover: handleHover,
-
-        // Auto-highlight disabled - we handle highlighting manually via getFillColor
-        autoHighlight: false,
-
-        // Update triggers for selection/hover changes
-        updateTriggers: {
-          getFillColor: [selectedId, hoveredId],
-        },
-      });
-
-    // Outline layer - crisp edges for each airspace
-    const outlineLayer = new GeoJsonLayer({
-        id: 'airspace-outline-layer',
-        data: {
-          type: 'FeatureCollection',
-          features: sortedData,
-        },
-        pickable: false,
-        stroked: true,
-        filled: false,
-        extruded: true,
-        wireframe: true,
-
-        getElevation: (d: ProcessedAirspace) => d.extrusionHeight * ALTITUDE_EXAGGERATION,
-        elevationScale: 1,
-
-        // Outline styling
-        getLineColor: (d: ProcessedAirspace) => {
-          const isSelected = d.properties.OBJECTID === selectedId;
-          const isHovered = d.properties.OBJECTID === hoveredId;
-
-          if (isSelected) {
-            return [255, 200, 50, 255] as [number, number, number, number];
-          }
-          if (isHovered) {
-            return [255, 230, 150, 255] as [number, number, number, number];
-          }
-
-          return getOutlineColor(d.properties.CLASS);
-        },
-        lineWidthMinPixels: 1,
-        getLineWidth: (d: ProcessedAirspace) => {
-          const isSelected = d.properties.OBJECTID === selectedId;
-          const isHovered = d.properties.OBJECTID === hoveredId;
-          return isSelected ? 80 : isHovered ? 60 : 30;
-        },
-
-        updateTriggers: {
-          getLineColor: [selectedId, hoveredId],
-          getLineWidth: [selectedId, hoveredId],
-        },
-      });
-
-    return [fillLayer, outlineLayer];
-  }, [sortedData, selectedAirspace, hoveredAirspace, handleClick, handleHover]);
+  const handleMapMouseMove = useCallback((e: MapLayerMouseEvent) => {
+    const feature = e.features?.[0];
+    if (feature && feature.properties) {
+      const id = feature.properties.objectId as number;
+      const airspace = airspaceById.get(id);
+      if (airspace) {
+        setHoveredAirspace(airspace);
+        setHoverInfo({ x: e.point.x, y: e.point.y, object: airspace });
+        return;
+      }
+    }
+    setHoveredAirspace(null);
+    setHoverInfo(null);
+  }, [airspaceById]);
 
   // Create map style with the appropriate sectional chart for this terminal area
   const mapStyle = useMemo(() => ({
@@ -277,14 +249,46 @@ export function Map3D({ terminalArea }: Map3DProps) {
       {/* Map container */}
       {show3D && (
         <Map
+          ref={mapRef}
           {...viewState}
           onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
           onClick={handleMapClick}
+          onMouseMove={handleMapMouseMove}
+          interactiveLayerIds={[AIRSPACE_FILL_LAYER_ID]}
+          cursor={hoveredAirspace ? 'pointer' : ''}
           maxPitch={85}
           minPitch={0}
           mapStyle={mapStyle}
         >
-          <DeckGLOverlay layers={layers} interleaved />
+          {sortedData.length > 0 && (
+            <Source
+              id={AIRSPACE_SOURCE_ID}
+              type="geojson"
+              data={airspaceGeoJSON}
+              promoteId="objectId"
+            >
+              <Layer
+                id={AIRSPACE_FILL_LAYER_ID}
+                type="fill-extrusion"
+                paint={{
+                  'fill-extrusion-color': fillColorExpression,
+                  'fill-extrusion-height': heightExpression,
+                  'fill-extrusion-base': 0,
+                  'fill-extrusion-opacity': 1,
+                  'fill-extrusion-vertical-gradient': true,
+                }}
+              />
+              <Layer
+                id={AIRSPACE_OUTLINE_LAYER_ID}
+                type="line"
+                paint={{
+                  'line-color': outlineColorExpression,
+                  'line-width': outlineWidthExpression,
+                  'line-opacity': 0.7,
+                }}
+              />
+            </Source>
+          )}
         </Map>
       )}
 
