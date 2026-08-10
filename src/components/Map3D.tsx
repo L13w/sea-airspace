@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import Map, { useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { GeoJsonLayer } from '@deck.gl/layers';
+import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
 import type { MapboxOverlayProps } from '@deck.gl/mapbox';
 import type { PickingInfo } from '@deck.gl/core';
 import { useAirspaceData } from '../hooks/useAirspaceData';
@@ -237,8 +237,33 @@ export function Map3D({ terminalArea }: Map3DProps) {
         },
       });
 
+    // DEBUG: with ?debug=1, add a giant magenta test dot at terminal-area center.
+    // ScatterplotLayer is deck.gl's simplest primitive — no extrusion, no lighting.
+    // If this renders on iOS Safari but the GeoJsonLayers don't, deck.gl itself
+    // works and the bug is specific to GeoJsonLayer/extrusion.
+    const isDebug =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('debug') === '1';
+    if (isDebug) {
+      // @ts-expect-error deck.gl 9.x has complex generic types
+      const testLayer = new ScatterplotLayer({
+        id: 'ios-diag-scatter',
+        data: [{ position: [terminalArea.centerLng, terminalArea.centerLat] }],
+        getPosition: (d: { position: [number, number] }) => d.position,
+        getRadius: 8000,
+        radiusUnits: 'meters',
+        getFillColor: [255, 0, 200, 220],
+        stroked: true,
+        getLineColor: [255, 255, 255, 255],
+        getLineWidth: 400,
+        lineWidthMinPixels: 3,
+        pickable: false,
+      });
+      return [fillLayer, outlineLayer, testLayer];
+    }
+
     return [fillLayer, outlineLayer];
-  }, [sortedData, selectedAirspace, hoveredAirspace, handleClick, handleHover]);
+  }, [sortedData, selectedAirspace, hoveredAirspace, handleClick, handleHover, terminalArea]);
 
   // Create map style with the appropriate sectional chart for this terminal area
   const mapStyle = useMemo(() => ({
