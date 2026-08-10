@@ -46,6 +46,10 @@ export function DebugPanel({ layerCount, featureCount, deckErrors }: DebugInfo) 
     window.addEventListener('unhandledrejection', onRej);
 
     // Periodically re-inspect canvases (deck.gl mounts async).
+    // Also inject a bright red background on the deck.gl canvas — behind the
+    // WebGL drawing buffer. If iOS shows red, canvas is composited above the
+    // map (WebGL isn't drawing). If iOS shows only map, canvas is being hidden
+    // from compositing (DOM/stacking issue).
     const inspect = () => {
       const nodes = Array.from(document.querySelectorAll('canvas'));
       const info = nodes.map((c, i) => {
@@ -53,12 +57,17 @@ export function DebugPanel({ layerCount, featureCount, deckErrors }: DebugInfo) 
         const parent = c.parentElement;
         const w = c.width, h = c.height;
         const cw = c.clientWidth, ch = c.clientHeight;
+        const parentClass = parent?.className ? String(parent.className) : '';
+        if (parentClass.includes('deck-widget-container')) {
+          c.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
+          c.style.outline = '4px solid lime';
+        }
         return (
           `[${i}] ${w}x${h}px int, ${cw}x${ch}px css, ` +
           `z=${cs.zIndex}, pos=${cs.position}, disp=${cs.display}, ` +
           `opac=${cs.opacity}, vis=${cs.visibility}, ` +
           `parent=${parent?.tagName?.toLowerCase() ?? '?'}` +
-          (parent?.className ? `.${String(parent.className).slice(0, 30)}` : '')
+          (parentClass ? `.${parentClass.slice(0, 30)}` : '')
         );
       });
       setCanvases(info);
