@@ -2,8 +2,12 @@ import React, { useState, useCallback, useMemo, useRef } from 'react';
 import Map, { useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { GeoJsonLayer } from '@deck.gl/layers';
-import type { MapboxOverlayProps } from '@deck.gl/mapbox';
-import type { PickingInfo } from '@deck.gl/core';
+
+// deck.gl v8 has no TS types (see src/deck-gl.d.ts). Use `any` for its API surface.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MapboxOverlayProps = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PickingInfo = any;
 import { useAirspaceData } from '../hooks/useAirspaceData';
 import { useIsMobile, useIsTouchDevice, useIsMobileLandscape } from '../hooks/useIsMobile';
 import type { TerminalArea } from '../config/terminalAreas';
@@ -127,7 +131,6 @@ export function Map3D({ terminalArea }: Map3DProps) {
     const hoveredId = hoveredAirspace?.properties.OBJECTID;
 
     // Base layer - solid filled polygons for each airspace volume
-    // @ts-expect-error deck.gl 9.x has complex generic types
     const fillLayer = new GeoJsonLayer({
         id: 'airspace-fill-layer',
         data: {
@@ -192,7 +195,6 @@ export function Map3D({ terminalArea }: Map3DProps) {
       });
 
     // Outline layer - crisp edges for each airspace
-    // @ts-expect-error deck.gl 9.x has complex generic types
     const outlineLayer = new GeoJsonLayer({
         id: 'airspace-outline-layer',
         data: {
