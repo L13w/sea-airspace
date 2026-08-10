@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import Map, { useControl } from 'react-map-gl/maplibre';
-import { MapboxOverlay } from '@deck.gl/mapbox';
+import Map from 'react-map-gl/maplibre';
+import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer, ScatterplotLayer } from '@deck.gl/layers';
-import type { MapboxOverlayProps } from '@deck.gl/mapbox';
 import type { PickingInfo } from '@deck.gl/core';
 import { useAirspaceData } from '../hooks/useAirspaceData';
 import { useIsMobile, useIsTouchDevice, useIsMobileLandscape } from '../hooks/useIsMobile';
@@ -33,13 +32,6 @@ function getInitialView(area: TerminalArea) {
 
 // Vertical exaggeration factor - makes altitude differences visible
 const ALTITUDE_EXAGGERATION = 16.7;
-
-// deck.gl overlay component using react-map-gl's useControl hook
-function DeckGLOverlay(props: MapboxOverlayProps) {
-  const overlay = useControl(() => new MapboxOverlay(props));
-  overlay.setProps(props);
-  return null;
-}
 
 interface HoverInfo {
   x: number;
@@ -298,39 +290,47 @@ export function Map3D({ terminalArea }: Map3DProps) {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', background: 'var(--bg-primary)' }}>
-      {/* Map container */}
+      {/* Map + deck.gl overlay — deck.gl owns its own canvas, controller, and
+          viewport; Map is a child that follows deck.gl's viewport. This bypasses
+          @deck.gl/mapbox's MapboxOverlay entirely — MapboxOverlay's integration
+          with react-map-gl v7 useControl silently produces no pixels on iOS
+          Safari 27 even though the canvas mounts, WebGL2 is available, and
+          layers get created. Standalone <DeckGL> uses a completely different
+          mounting path. */}
       {show3D && (
-        <Map
-          {...viewState}
-          onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
-          onClick={handleMapClick}
-          maxPitch={85}
-          minPitch={0}
-          mapStyle={mapStyle}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        <DeckGL
+          viewState={viewState}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onViewStateChange={(evt: any) => {
+            const vs = evt.viewState;
+            setViewState({
+              longitude: vs.longitude,
+              latitude: vs.latitude,
+              zoom: vs.zoom,
+              pitch: Math.max(0, Math.min(85, vs.pitch ?? viewState.pitch)),
+              bearing: vs.bearing ?? viewState.bearing,
+            });
+          }}
+          controller={true}
+          layers={layers}
+          onClick={(info: PickingInfo) => {
+            if (info.object) {
+              handleClick(info);
+            } else {
+              handleMapClick();
+            }
+          }}
+          onError={(err: Error) => {
+            const msg = `${err.name || 'Error'}: ${err.message || String(err)}`.slice(0, 250);
+            setDeckErrors((prev) => (prev.includes(msg) ? prev : [...prev, msg].slice(-5)));
+            // eslint-disable-next-line no-console
+            console.error('deck.gl error:', err);
+          }}
+          style={{ position: 'absolute', top: '0', left: '0', width: '100%', height: '100%' }}
         >
-          {/* NOTE: no `interleaved` prop — that mode makes deck.gl share MapLibre's
-              WebGL context, which fails silently on iOS Safari (layers don't render).
-              Overlaid mode (default) puts deck.gl on its own canvas + context.
-              Since the base map is a single raster layer with no 3D terrain/buildings
-              to depth-test against, overlaid gives identical output on all browsers. */}
-          <DeckGLOverlay
-            layers={layers}
-            // iOS Safari (WebKit) on high-DPR devices (iPhone Pro at DPR 3)
-            // silently produces no pixels when deck.gl v9 creates the
-            // framebuffer at native DPR. Forcing useDevicePixels: false makes
-            // deck.gl draw at CSS pixel size and the browser upscales — well-
-            // known workaround. Slight visual softness vs. native DPR; acceptable
-            // trade for "renders at all."
-            useDevicePixels={false}
-            onError={(err: Error) => {
-              const msg = `${err.name || 'Error'}: ${err.message || String(err)}`.slice(0, 250);
-              setDeckErrors((prev) => (prev.includes(msg) ? prev : [...prev, msg].slice(-5)));
-              // Also log to console for Web Inspector viewing.
-              // eslint-disable-next-line no-console
-              console.error('deck.gl error:', err);
-            }}
-          />
-        </Map>
+          <Map mapStyle={mapStyle} reuseMaps />
+        </DeckGL>
       )}
 
       {/* Terminal Area Selector - upper left */}
