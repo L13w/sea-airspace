@@ -315,6 +315,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
               to depth-test against, overlaid gives identical output on all browsers. */}
           <DeckGLOverlay
             layers={layers}
+            // iOS Safari (WebKit) on high-DPR devices (iPhone Pro at DPR 3)
+            // silently produces no pixels when deck.gl v9 creates the
+            // framebuffer at native DPR. Forcing useDevicePixels: false makes
+            // deck.gl draw at CSS pixel size and the browser upscales — well-
+            // known workaround. Slight visual softness vs. native DPR; acceptable
+            // trade for "renders at all."
+            useDevicePixels={false}
             onError={(err: Error) => {
               const msg = `${err.name || 'Error'}: ${err.message || String(err)}`.slice(0, 250);
               setDeckErrors((prev) => (prev.includes(msg) ? prev : [...prev, msg].slice(-5)));
