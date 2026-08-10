@@ -30,6 +30,7 @@ export function DebugPanel({ layerCount, featureCount, deckErrors }: DebugInfo) 
   const [webgl] = useState(detectWebGL);
   const [jsErrors, setJsErrors] = useState<string[]>([]);
   const [unhandled, setUnhandled] = useState<string[]>([]);
+  const [canvases, setCanvases] = useState<string[]>([]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -43,9 +44,32 @@ export function DebugPanel({ layerCount, featureCount, deckErrors }: DebugInfo) 
     };
     window.addEventListener('error', onErr);
     window.addEventListener('unhandledrejection', onRej);
+
+    // Periodically re-inspect canvases (deck.gl mounts async).
+    const inspect = () => {
+      const nodes = Array.from(document.querySelectorAll('canvas'));
+      const info = nodes.map((c, i) => {
+        const cs = window.getComputedStyle(c);
+        const parent = c.parentElement;
+        const w = c.width, h = c.height;
+        const cw = c.clientWidth, ch = c.clientHeight;
+        return (
+          `[${i}] ${w}x${h}px int, ${cw}x${ch}px css, ` +
+          `z=${cs.zIndex}, pos=${cs.position}, disp=${cs.display}, ` +
+          `opac=${cs.opacity}, vis=${cs.visibility}, ` +
+          `parent=${parent?.tagName?.toLowerCase() ?? '?'}` +
+          (parent?.className ? `.${String(parent.className).slice(0, 30)}` : '')
+        );
+      });
+      setCanvases(info);
+    };
+    inspect();
+    const t = setInterval(inspect, 2000);
+
     return () => {
       window.removeEventListener('error', onErr);
       window.removeEventListener('unhandledrejection', onRej);
+      clearInterval(t);
     };
   }, [enabled]);
 
@@ -88,6 +112,12 @@ export function DebugPanel({ layerCount, featureCount, deckErrors }: DebugInfo) 
       {jsErrors.map((e, i) => (
         <div key={`j${i}`} style={{ color: '#f66' }}>
           · {e}
+        </div>
+      ))}
+      <div>Canvases in DOM: {canvases.length}</div>
+      {canvases.map((c, i) => (
+        <div key={`c${i}`} style={{ color: '#ff0', fontSize: 9 }}>
+          {c}
         </div>
       ))}
       <div>Unhandled rejections: {unhandled.length}</div>
