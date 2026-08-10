@@ -313,6 +313,14 @@ export function Map3D({ terminalArea }: Map3DProps) {
             });
           }}
           controller={true}
+          // Force known-good GL state. iOS Safari 27 WebKit may have changed
+          // defaults such that fragments are silently discarded. Overriding
+          // depth/cull isolates whether GL state is the issue.
+          parameters={{
+            depthCompare: 'always',
+            depthWriteEnabled: false,
+            cullMode: 'none',
+          }}
           layers={layers}
           onClick={(info: PickingInfo) => {
             if (info.object) {
