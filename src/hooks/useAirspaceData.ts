@@ -48,40 +48,54 @@ export function useAirspaceData(terminalArea: TerminalArea): UseAirspaceDataRetu
           ['B', 'C', 'D', 'E'].includes(f.properties.CLASS)
         );
 
-        // Fetch Prohibited Areas (P)
+        // Fetch Prohibited Areas (P) — auxiliary; tolerate any failure without
+        // aborting the whole load (Class airspace is the primary data).
         const prohibitedParams = new URLSearchParams(baseParams);
-        const prohibitedResponse = await fetch(`${PROHIBITED_AREAS_URL}?${prohibitedParams}`);
         let prohibitedFeatures: AirspaceFeature[] = [];
-        if (prohibitedResponse.ok) {
-          const prohibitedGeojson: AirspaceGeoJSON = await prohibitedResponse.json();
-          // Map TYPE_CODE to CLASS for consistent handling
-          prohibitedFeatures = prohibitedGeojson.features.map(f => ({
-            ...f,
-            properties: {
-              ...f.properties,
-              CLASS: f.properties.TYPE_CODE || 'P',
+        try {
+          const prohibitedResponse = await fetch(`${PROHIBITED_AREAS_URL}?${prohibitedParams}`);
+          if (prohibitedResponse.ok) {
+            const prohibitedGeojson = await prohibitedResponse.json();
+            if (prohibitedGeojson && Array.isArray(prohibitedGeojson.features)) {
+              prohibitedFeatures = prohibitedGeojson.features.map((f: AirspaceFeature) => ({
+                ...f,
+                properties: {
+                  ...f.properties,
+                  CLASS: f.properties.TYPE_CODE || 'P',
+                }
+              }));
+            } else {
+              console.warn('Prohibited endpoint returned 200 without features array:', prohibitedGeojson);
             }
-          }));
+          }
+        } catch (e) {
+          console.warn('Prohibited fetch failed (continuing without it):', e);
         }
 
-        // Fetch Restricted Areas (R) from Special Use Airspace
-        // Only fetch R (Restricted) types, not all SUA
+        // Fetch Restricted Areas (R) from Special Use Airspace — same tolerance.
         const suaParams = new URLSearchParams({
           ...baseParams,
           where: "TYPE_CODE='R'",
         });
-        const suaResponse = await fetch(`${SUA_URL}?${suaParams}`);
         let restrictedFeatures: AirspaceFeature[] = [];
-        if (suaResponse.ok) {
-          const suaGeojson: AirspaceGeoJSON = await suaResponse.json();
-          // Map TYPE_CODE to CLASS for consistent handling
-          restrictedFeatures = suaGeojson.features.map(f => ({
-            ...f,
-            properties: {
-              ...f.properties,
-              CLASS: f.properties.TYPE_CODE || 'R',
+        try {
+          const suaResponse = await fetch(`${SUA_URL}?${suaParams}`);
+          if (suaResponse.ok) {
+            const suaGeojson = await suaResponse.json();
+            if (suaGeojson && Array.isArray(suaGeojson.features)) {
+              restrictedFeatures = suaGeojson.features.map((f: AirspaceFeature) => ({
+                ...f,
+                properties: {
+                  ...f.properties,
+                  CLASS: f.properties.TYPE_CODE || 'R',
+                }
+              }));
+            } else {
+              console.warn('SUA endpoint returned 200 without features array:', suaGeojson);
             }
-          }));
+          }
+        } catch (e) {
+          console.warn('SUA fetch failed (continuing without it):', e);
         }
 
         // Combine all features
