@@ -245,7 +245,6 @@ export function Map3D({ terminalArea }: Map3DProps) {
       typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).get('debug') === '1';
     if (isDebug) {
-      // @ts-expect-error deck.gl 9.x has complex generic types
       const testLayer = new ScatterplotLayer({
         id: 'ios-diag-scatter',
         data: [{ position: [terminalArea.centerLng, terminalArea.centerLat] }],
