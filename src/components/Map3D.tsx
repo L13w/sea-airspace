@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import Map, { Source, Layer } from 'react-map-gl/maplibre';
+import Map, { Source, Layer, useControl } from 'react-map-gl/maplibre';
 import type { MapRef, MapLayerMouseEvent } from 'react-map-gl/maplibre';
+import { MapboxOverlay } from '@deck.gl/mapbox';
+import { GeoJsonLayer } from '@deck.gl/layers';
 import { useAirspaceData } from '../hooks/useAirspaceData';
 import { useIsMobile, useIsTouchDevice, useIsMobileLandscape } from '../hooks/useIsMobile';
 import type { TerminalArea } from '../config/terminalAreas';
@@ -12,8 +14,26 @@ import { BrowserNotice } from './BrowserNotice';
 import { TerminalAreaSelector } from './TerminalAreaSelector';
 import { MobileMenu } from './MobileMenu';
 import { formatAltitude } from '../utils/altitudeUtils';
+import { getOutlineColor, HIGHLIGHT_COLORS } from '../utils/colorUtils';
 import type { ProcessedAirspace } from '../types/airspace';
 import 'maplibre-gl/dist/maplibre-gl.css';
+
+// deck.gl v8 has no TS types (see src/deck-gl.d.ts). Use `any` for its API surface.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MapboxOverlayProps = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PickingInfo = any;
+
+// deck.gl fails to draw on iOS WebKit (canvas is present + sized but no fragments
+// reach the compositor). MapLibre's native fill-extrusion renders fine there since
+// it's the same engine that already draws the sectional raster. Split at runtime
+// so desktop keeps deck.gl's richer 3D look (Phong shading + wireframe outlines)
+// and iOS gets a version that actually renders.
+// (iPad on iOS 13+ reports platform "MacIntel", so also check touchpoint hint.)
+const IS_IOS = typeof navigator !== 'undefined' && (
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+);
 
 // Get initial view for a terminal area
 function getInitialView(area: TerminalArea) {
@@ -32,6 +52,13 @@ const ALTITUDE_EXAGGERATION = 16.7;
 const AIRSPACE_SOURCE_ID = 'airspace-source';
 const AIRSPACE_FILL_LAYER_ID = 'airspace-fill-extrusion';
 const AIRSPACE_OUTLINE_LAYER_ID = 'airspace-outline-ground';
+
+// deck.gl overlay component using react-map-gl's useControl hook (desktop path).
+function DeckGLOverlay(props: MapboxOverlayProps) {
+  const overlay = useControl(() => new MapboxOverlay(props));
+  overlay.setProps(props);
+  return null;
+}
 
 interface HoverInfo {
   x: number;
@@ -67,6 +94,35 @@ export function Map3D({ terminalArea }: Map3DProps) {
   const mapRef = useRef<MapRef | null>(null);
   const prevSelectedIdRef = useRef<number | null>(null);
   const prevHoveredIdRef = useRef<number | null>(null);
+
+  // deck.gl path: track whether deck.gl's onClick fired so the map-level onClick
+  // knows not to clear the selection (event order: deck first, then map).
+  const deckClickHandled = useRef(false);
+
+  const handleDeckClick = useCallback((info: PickingInfo) => {
+    deckClickHandled.current = true;
+    if (info.object) {
+      setSelectedAirspace(info.object as ProcessedAirspace);
+    }
+  }, []);
+
+  const handleDeckMapClick = useCallback(() => {
+    if (!deckClickHandled.current) {
+      setSelectedAirspace(null);
+    }
+    deckClickHandled.current = false;
+  }, []);
+
+  const handleDeckHover = useCallback((info: PickingInfo) => {
+    if (info.object) {
+      const obj = info.object as ProcessedAirspace;
+      setHoveredAirspace(obj);
+      setHoverInfo({ x: info.x, y: info.y, object: obj });
+    } else {
+      setHoveredAirspace(null);
+      setHoverInfo(null);
+    }
+  }, []);
 
   const handleProfileClick = useCallback((airspace: ProcessedAirspace) => {
     setSelectedAirspace(airspace);
@@ -154,8 +210,84 @@ export function Map3D({ terminalArea }: Map3DProps) {
     '*', ['get', 'extrusionHeight'], ALTITUDE_EXAGGERATION,
   ] as unknown as never), []);
 
+  // deck.gl layers (desktop path). Built only when we're not on iOS to avoid
+  // constructing large GeoJsonLayers we won't use.
+  const deckLayers = useMemo(() => {
+    if (IS_IOS || !sortedData.length) return [];
+
+    const selectedId = selectedAirspace?.properties.OBJECTID;
+    const hoveredId = hoveredAirspace?.properties.OBJECTID;
+
+    const fillLayer = new GeoJsonLayer({
+      id: 'airspace-fill-layer',
+      data: { type: 'FeatureCollection', features: sortedData },
+      pickable: true,
+      stroked: false,
+      filled: true,
+      extruded: true,
+      wireframe: false,
+      getElevation: (d: ProcessedAirspace) => d.extrusionHeight * ALTITUDE_EXAGGERATION,
+      elevationScale: 1,
+      getFillColor: (d: ProcessedAirspace) => {
+        const isSelected = d.properties.OBJECTID === selectedId;
+        const isHovered = d.properties.OBJECTID === hoveredId;
+        if (isSelected) return HIGHLIGHT_COLORS.selected;
+        if (isHovered) return HIGHLIGHT_COLORS.hover;
+        const baseColor = d.color;
+        const classOpacity: Record<string, number> = { B: 100, C: 80, D: 70, E: 50 };
+        const opacity = classOpacity[d.properties.CLASS] || 60;
+        return [baseColor[0], baseColor[1], baseColor[2], opacity] as [number, number, number, number];
+      },
+      material: {
+        ambient: 0.6,
+        diffuse: 0.8,
+        shininess: 32,
+        specularColor: [60, 64, 70],
+      },
+      onClick: handleDeckClick,
+      onHover: handleDeckHover,
+      autoHighlight: false,
+      updateTriggers: {
+        getFillColor: [selectedId, hoveredId],
+      },
+    });
+
+    const outlineLayer = new GeoJsonLayer({
+      id: 'airspace-outline-layer',
+      data: { type: 'FeatureCollection', features: sortedData },
+      pickable: false,
+      stroked: true,
+      filled: false,
+      extruded: true,
+      wireframe: true,
+      getElevation: (d: ProcessedAirspace) => d.extrusionHeight * ALTITUDE_EXAGGERATION,
+      elevationScale: 1,
+      getLineColor: (d: ProcessedAirspace) => {
+        const isSelected = d.properties.OBJECTID === selectedId;
+        const isHovered = d.properties.OBJECTID === hoveredId;
+        if (isSelected) return [255, 200, 50, 255] as [number, number, number, number];
+        if (isHovered) return [255, 230, 150, 255] as [number, number, number, number];
+        return getOutlineColor(d.properties.CLASS);
+      },
+      lineWidthMinPixels: 1,
+      getLineWidth: (d: ProcessedAirspace) => {
+        const isSelected = d.properties.OBJECTID === selectedId;
+        const isHovered = d.properties.OBJECTID === hoveredId;
+        return isSelected ? 80 : isHovered ? 60 : 30;
+      },
+      updateTriggers: {
+        getLineColor: [selectedId, hoveredId],
+        getLineWidth: [selectedId, hoveredId],
+      },
+    });
+
+    return [fillLayer, outlineLayer];
+  }, [sortedData, selectedAirspace, hoveredAirspace, handleDeckClick, handleDeckHover]);
+
   // Sync selection → MapLibre feature-state (drives fill/outline color via expressions).
+  // iOS path only; on desktop the deck.gl layers handle highlighting themselves.
   useEffect(() => {
+    if (!IS_IOS) return;
     const map = mapRef.current?.getMap();
     if (!map || !map.getSource(AIRSPACE_SOURCE_ID)) return;
     const newId = selectedAirspace?.properties.OBJECTID ?? null;
@@ -169,8 +301,9 @@ export function Map3D({ terminalArea }: Map3DProps) {
     prevSelectedIdRef.current = newId;
   }, [selectedAirspace, airspaceGeoJSON]);
 
-  // Sync hover → feature-state, same pattern.
+  // Sync hover → feature-state, same pattern (iOS path only).
   useEffect(() => {
+    if (!IS_IOS) return;
     const map = mapRef.current?.getMap();
     if (!map || !map.getSource(AIRSPACE_SOURCE_ID)) return;
     const newId = hoveredAirspace?.properties.OBJECTID ?? null;
@@ -246,8 +379,20 @@ export function Map3D({ terminalArea }: Map3DProps) {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', background: 'var(--bg-primary)' }}>
-      {/* Map container */}
-      {show3D && (
+      {/* Map container — desktop (deck.gl) vs iOS (MapLibre native fill-extrusion) */}
+      {show3D && !IS_IOS && (
+        <Map
+          {...viewState}
+          onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
+          onClick={handleDeckMapClick}
+          maxPitch={85}
+          minPitch={0}
+          mapStyle={mapStyle}
+        >
+          <DeckGLOverlay layers={deckLayers} interleaved />
+        </Map>
+      )}
+      {show3D && IS_IOS && (
         <Map
           ref={mapRef}
           {...viewState}
