@@ -691,7 +691,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
       />
 
       {/* Legend - hidden on mobile */}
-      {show3D && !isMobileAny && <Legend compact={!!selectedAirspace} showClassE={showClassE} onShowClassEChange={setShowClassE} />}
+      {show3D && (
+        <Legend
+          compact={isMobileAny || !!selectedAirspace}
+          showClassE={showClassE}
+          onShowClassEChange={isMobileAny ? undefined : setShowClassE}
+        />
+      )}
 
       {/* Loading overlay */}
       {loading && (
