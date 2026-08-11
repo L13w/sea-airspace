@@ -429,7 +429,10 @@ export function Map3D({ terminalArea }: Map3DProps) {
                   'fill-extrusion-color': fillColorExpression,
                   'fill-extrusion-height': heightExpression,
                   'fill-extrusion-base': baseExpression,
-                  'fill-extrusion-opacity': 1,
+                  // Layer-level scalar that multiplies each color's alpha, so per-class
+                  // relative translucency is preserved. Tuned to approximate the
+                  // desktop deck.gl look where outer shelves reveal inner cores.
+                  'fill-extrusion-opacity': 0.55,
                   'fill-extrusion-vertical-gradient': true,
                 }}
               />
