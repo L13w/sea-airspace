@@ -148,7 +148,9 @@ export function Map3D({ terminalArea }: Map3DProps) {
   }, [sortedData]);
 
   // Flatten to a plain GeoJSON FeatureCollection whose properties MapLibre expressions
-  // can read directly (airspaceClass, extrusionHeight, objectId).
+  // can read directly. floorMeters/ceilingMeters drive fill-extrusion-base/height
+  // (both are absolute altitudes in map units — MapLibre ignores geometry Z for
+  // fill-extrusion, so the floor MUST come from a paint property).
   const airspaceGeoJSON = useMemo(() => ({
     type: 'FeatureCollection' as const,
     features: sortedData.map(f => ({
@@ -158,7 +160,8 @@ export function Map3D({ terminalArea }: Map3DProps) {
       properties: {
         objectId: f.properties.OBJECTID,
         airspaceClass: f.properties.CLASS,
-        extrusionHeight: f.extrusionHeight,
+        floorMeters: f.floorMeters,
+        ceilingMeters: f.ceilingMeters,
       },
     })),
   }), [sortedData]);
@@ -206,8 +209,15 @@ export function Map3D({ terminalArea }: Map3DProps) {
     1,
   ] as unknown as never), []);
 
+  // fill-extrusion-height is the ABSOLUTE top altitude in map units (not delta).
+  // Ditto fill-extrusion-base for the floor. Multiply both by the same exaggeration
+  // used in the deck.gl path so shelf heights match visually across renderers.
   const heightExpression = useMemo(() => ([
-    '*', ['get', 'extrusionHeight'], ALTITUDE_EXAGGERATION,
+    '*', ['get', 'ceilingMeters'], ALTITUDE_EXAGGERATION,
+  ] as unknown as never), []);
+
+  const baseExpression = useMemo(() => ([
+    '*', ['get', 'floorMeters'], ALTITUDE_EXAGGERATION,
   ] as unknown as never), []);
 
   // deck.gl layers (desktop path). Built only when we're not on iOS to avoid
@@ -418,7 +428,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
                 paint={{
                   'fill-extrusion-color': fillColorExpression,
                   'fill-extrusion-height': heightExpression,
-                  'fill-extrusion-base': 0,
+                  'fill-extrusion-base': baseExpression,
                   'fill-extrusion-opacity': 1,
                   'fill-extrusion-vertical-gradient': true,
                 }}
