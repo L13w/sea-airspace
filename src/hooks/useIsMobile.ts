@@ -1,16 +1,27 @@
 import { useState, useEffect } from 'react';
 
 const MOBILE_BREAKPOINT = 768;
+// Touch devices (tablets, large phones) use a wider breakpoint because the
+// desktop side-panels (profile + info panel) crowd the map even at 800–1024px.
+// Pointer-only devices at the same width are usually resized browser windows
+// where the user can just widen them, so we keep the tight 768px cutoff there.
+const TOUCH_MOBILE_BREAKPOINT = 1100;
+
+function computeIsMobile(): boolean {
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const bp = isTouch ? TOUCH_MOBILE_BREAKPOINT : MOBILE_BREAKPOINT;
+  return window.innerWidth <= bp;
+}
 
 export function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.innerWidth <= MOBILE_BREAKPOINT;
+    return computeIsMobile();
   });
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+      setIsMobile(computeIsMobile());
     };
 
     // Check on mount

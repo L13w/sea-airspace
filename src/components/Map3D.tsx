@@ -11,6 +11,7 @@ import { Legend } from './Legend';
 import { AirspaceProfile } from './AirspaceProfile';
 import { AltitudeScale } from './AltitudeScale';
 import { BrowserNotice } from './BrowserNotice';
+import { IOSNotice } from './IOSNotice';
 import { TerminalAreaSelector } from './TerminalAreaSelector';
 import { MobileMenu } from './MobileMenu';
 import { formatAltitude } from '../utils/altitudeUtils';
@@ -959,6 +960,9 @@ export function Map3D({ terminalArea }: Map3DProps) {
 
       {/* Browser compatibility notice */}
       <BrowserNotice />
+
+      {/* iOS renderer-limitation notice */}
+      <IOSNotice />
 
       {/* Copyright notice at bottom - fixed position to escape map stacking context */}
       <div
