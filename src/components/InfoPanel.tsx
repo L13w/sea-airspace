@@ -37,17 +37,17 @@ export function InfoPanel({ airspace, onClose }: InfoPanelProps) {
           zIndex: 5000,
         }
       : {
-          // Portrait: full-width bottom bar
+          // Portrait: floating bar just above the copyright line. Using position:
+          // absolute so this respects the parent's 100dvh sizing (which excludes
+          // iOS Safari's bottom toolbar); env(safe-area-inset-bottom) handles the
+          // home indicator; +40 clears the copyright text at env+8.
           position: 'absolute' as const,
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 40px)',
+          left: 8,
+          right: 8,
           overflow: 'hidden',
-          borderRadius: '16px 16px 0 0',
-          borderBottom: 'none',
+          borderRadius: '16px',
           animation: 'slideUpMobile 0.25s ease-out',
-          // Extra padding for mobile browser UI (address bar, home indicator)
-          paddingBottom: 'max(calc(env(safe-area-inset-bottom, 50px) + 12px), 50px)',
           zIndex: 5000,
         };
 

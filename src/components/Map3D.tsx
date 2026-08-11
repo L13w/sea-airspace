@@ -395,7 +395,7 @@ export function Map3D({ terminalArea }: Map3DProps) {
   const isMobileAny = isMobile || isMobileLandscape;
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative', background: 'var(--bg-primary)' }}>
+    <div style={{ width: '100vw', height: '100dvh', position: 'relative', background: 'var(--bg-primary)' }}>
       {/* Map container — desktop (deck.gl) vs iOS (MapLibre native fill-extrusion) */}
       {show3D && !IS_IOS && (
         <Map
