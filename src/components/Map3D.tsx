@@ -168,6 +168,12 @@ export function Map3D({ terminalArea }: Map3DProps) {
 
   // Paint expressions — per-class color/opacity baked into rgba strings so a single
   // fill-extrusion layer covers every class (fill-extrusion-opacity is layer-scope only).
+  //
+  // Note: these RGBs are punchier than the shared AIRSPACE_COLORS palette used by
+  // deck.gl on desktop. deck.gl compensates with Phong lighting; MapLibre has no
+  // real lighting on fill-extrusion, so flat pastel colors read as muted mush and
+  // the classes bleed into each other. Boosted saturation gives them back their
+  // hue identity at the same low opacity.
   const fillColorExpression = useMemo(() => ([
     'case',
     ['boolean', ['feature-state', 'selected'], false], 'rgba(255, 255, 100, 0.78)',
@@ -175,13 +181,13 @@ export function Map3D({ terminalArea }: Map3DProps) {
     [
       'match',
       ['get', 'airspaceClass'],
-      'B', 'rgba(59, 130, 246, 0.39)',
-      'C', 'rgba(168, 85, 247, 0.31)',
-      'D', 'rgba(34, 211, 238, 0.27)',
-      'E', 'rgba(244, 114, 182, 0.20)',
-      'P', 'rgba(239, 68, 68, 0.24)',
-      'R', 'rgba(249, 115, 22, 0.24)',
-      'rgba(128, 128, 128, 0.24)',
+      'B', 'rgba(50, 140, 255, 0.55)',    // vivid blue
+      'C', 'rgba(200, 80, 255, 0.50)',    // vivid magenta/purple
+      'D', 'rgba(30, 230, 255, 0.45)',    // vivid cyan
+      'E', 'rgba(255, 120, 210, 0.35)',   // vivid pink
+      'P', 'rgba(255, 60, 60, 0.45)',     // vivid red
+      'R', 'rgba(255, 140, 40, 0.45)',    // vivid orange
+      'rgba(160, 160, 160, 0.35)',
     ],
   ] as unknown as never), []);
 
@@ -429,11 +435,12 @@ export function Map3D({ terminalArea }: Map3DProps) {
                   'fill-extrusion-color': fillColorExpression,
                   'fill-extrusion-height': heightExpression,
                   'fill-extrusion-base': baseExpression,
-                  // Layer-level scalar that multiplies each color's alpha, so per-class
-                  // relative translucency is preserved. Tuned to approximate the
-                  // desktop deck.gl look where outer shelves reveal inner cores.
-                  'fill-extrusion-opacity': 0.55,
-                  'fill-extrusion-vertical-gradient': true,
+                  // Opacity now baked per-class into the rgba strings; keep layer
+                  // multiplier at 1 so those alphas are the final value.
+                  'fill-extrusion-opacity': 1,
+                  // Vertical gradient darkens wall bottoms and washes out hue —
+                  // disabling it keeps the classes visually distinct.
+                  'fill-extrusion-vertical-gradient': false,
                 }}
               />
               <Layer
